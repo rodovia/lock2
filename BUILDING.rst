@@ -39,4 +39,4 @@ If something went wrong during the build, more than certainly bug inside the sou
 
 .. _their: https://github.com/limine-bootloader/limine#binary-releases
 
-.. [1] Despite the hyperlink currently going to the 5th major of Limine, you can use the 4th version. 4.x support is untested though.
+.. [1] Despite the hyperlink currently going to the 5th major of Limine, you can use the 4th version. You also **will** have to modify the way `Makefile` invokes the limine executable to adapt to 4.x tools.
