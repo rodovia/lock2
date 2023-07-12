@@ -94,13 +94,11 @@ pci::CPci::FindDeviceByClass(uint8_t klass, uint8_t subclass, IDHelpPciDevice** 
     };
 
     auto iter = std::find_if(m_Devices.begin(), m_Devices.end(), pred);
-    Warn("vec=0x%p, cap=%i, len=%i\n", m_Devices.data(), m_Devices.capacity(), m_Devices.size());
     if (iter == m_Devices.end())
     {
-        Warn("NOT FOUND!\n");
         return;
     }
-    (*outDevice) = iter;
+    (*outDevice) = iter + 0;
 }
 
 void pci::CPci::FindDeviceExact(uint8_t bus, uint8_t device, IDHelpPciDevice **dev)

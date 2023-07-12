@@ -37,7 +37,6 @@ public:
             thread_creation_flags flags
         );
 
-    thread_t GetId();
     void Start();
     full_register_state* GetState() const;
     void SaveState(full_register_state state);

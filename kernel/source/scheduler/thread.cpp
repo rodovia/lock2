@@ -62,3 +62,4 @@ full_register_state* sched::CThread::GetState() const
 {
     return m_RegState;
 }
+

@@ -43,7 +43,7 @@ void sched::semaphore::Wait()
     {
         CThread*& s = CScheduler::GetCurrentThread();
         s->SetSuspended(true, kThreadSuspendReasonWaiting);
-        m_SuspendedThreads.push_back(s->GetId());
+        m_SuspendedThreads.push_back(CScheduler::GetCurrentThreadId());
 
         while(true)
         {
@@ -81,7 +81,7 @@ void sched::mutex::Lock()
     }
 
     auto& t = CScheduler::GetCurrentThread();
-    m_SuspendedThreads.push_back(t->GetId());
+    m_SuspendedThreads.push_back(CScheduler::GetCurrentThreadId());
     t->SetSuspended(true, kThreadSuspendReasonWaiting);
 
     while (true)

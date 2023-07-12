@@ -24,7 +24,8 @@ CXXFILES=start_thunk.cpp terminal.cpp requests.cpp klibc/string.cpp    \
 		dllogic/ustar.cpp arch/i386/debug/stackframe.cpp  					 \
 		arch/i386/debug/elf.cpp dllogic/api/dhelp.cpp pci/pci.cpp			  \
 		arch/i386/itaniumabi_runtime/icxxabi.cpp klibc/abort.cpp 			   \
-		acpi/acpi_handlers.cpp scheduler/scheduler.cpp scheduler/thread.cpp
+		acpi/acpi_handlers.cpp scheduler/scheduler.cpp scheduler/thread.cpp     \
+		scheduler/semaphore.cpp
 CXXSOURCES=$(addprefix $(KERNELSOURCE)/,$(CXXFILES))
 CXXBUILD=$(addprefix $(KERNELBUILD)/,$(addsuffix .o,$(CXXFILES)))
 CXXHEADERS=$(patsubst %.cpp.o,%.d,$(CXXBUILD))

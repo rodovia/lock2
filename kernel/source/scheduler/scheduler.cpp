@@ -77,7 +77,6 @@ void sched::CScheduler::AddThread(CThread* thread)
     }
     m_ThreadCount++;
     tmp->Next = new thread_list(thread);
-
     LeaveCriticalZone();
 }
 

@@ -5,3 +5,5 @@ iso/
 *.bmp
 .gdbinit
 .cache
+limine/
+compile_commands.json

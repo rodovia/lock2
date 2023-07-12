@@ -2,6 +2,11 @@
 #include "arch/i386/apic.h"
 #include "alloc/physical.h"
 
+static void CalibrateTimer()
+{
+    
+}
+
 acpi::CApicTimer::CApicTimer(acpi::CApic* apic)
     : m_Apic(apic)
 {
