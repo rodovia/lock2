@@ -1,0 +1,7 @@
+bochsrc.txt
+bx_enh_dbg.ini
+build/
+iso/
+*.bmp
+.gdbinit
+.cache
