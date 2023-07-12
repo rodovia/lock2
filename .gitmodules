@@ -1,0 +1,3 @@
+[submodule "freecxxlib"]
+	path = freecxxlib
+	url = https://github.com/rodovia/freecxxlib
