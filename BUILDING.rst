@@ -26,6 +26,6 @@ Higher build customization (Kconfig!) is planned, but not a priority right now.
 
 If something went wrong during the build, more than certainly bug inside the source code. You can wait until it gets fixed or fix it yourself.
 
-.. their_: https://github.com/limine-bootloader/limine#binary-releases
+.. _their: https://github.com/limine-bootloader/limine#binary-releases
 
 .. [1] Despite the hyperlink currently going to the 5th major of Limine, you can use the 4th version. 4.x support is untested though.
