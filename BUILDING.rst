@@ -1,6 +1,17 @@
 Building Lock2: Tutorial
 ========================
-First of all, make sure you've done a recursive clone of Lock2 to ensure all the submodules were correctly fetched.
+Windows users: You'll have to install an UNIX-compatible environment on your computer, such as WSL2, MSYS2 or Cygwin.
+
+First of all, install the following tools. The name of their packages may vary between distributions or operating systems.
+
+        * `xorriso`
+
+        * `nasm`
+
+        * `clang` and `lld` (or `gcc` with `ld`)
+
+
+Make sure you've done a recursive clone of Lock2 to ensure all the submodules were correctly fetched.
 
 .. code-block::
 
