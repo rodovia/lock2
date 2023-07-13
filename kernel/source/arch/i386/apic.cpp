@@ -4,8 +4,10 @@
 #include "arch/i386/paging/paging.h"
 #include "acpi/tables.h"
 #include "terminal.h"
+#include <algorithm>
 
 uint32_t volatile* _localApicAddress = nullptr;
+uint32_t volatile* _ioApicAddress = nullptr;
 
 acpi::CApic::CApic(acpi::madt_header* apic)
     : m_IoApicAddress(nullptr),
@@ -30,18 +32,14 @@ acpi::CApic::CApic(acpi::madt_header* apic)
         _localApicAddress = m_LapicAddress;
     }
 
-    auto max = this->IoGetMaximumRedirectionEntries();
-    for (int i = 0; i < max; i++)
+    if (_ioApicAddress == nullptr)
     {
-        io_apic_redir_entry entry = this->IoGetRedirectionEntry(i);
-        
+        _ioApicAddress = m_IoApicAddress;
     }
 }
 
-/* APIC is assumed to be already init */
 acpi::CApic::CApic()
-    : m_IoApicAddress(nullptr),
-      m_LapicAddress(_localApicAddress)
+    : CApic(reinterpret_cast<madt_header*>(acpi::FindTable("APIC")))
 {
 }
 
@@ -66,6 +64,7 @@ void acpi::CApic::ParseMadtVariableTable(acpi::madt_header* madt)
         {
             auto addr = reinterpret_cast<acpi::madt_entry_io_apic*>(entries);
             m_IoApicAddress = reinterpret_cast<volatile uint32_t*>(addr->IoApicAddress);
+            m_GlobalSystemBase = addr->GsiBase;
             break;
         }
         case MADT_ENTRY_LOCAL_APIC_ADDR_OVERRIDE:
@@ -81,6 +80,12 @@ void acpi::CApic::ParseMadtVariableTable(acpi::madt_header* madt)
             m_OverrideLocalApic = true;
             break;
         }
+        case MADT_IO_APIC_INT_SOURCE_OVERRIDE:
+        {
+            auto addr = reinterpret_cast<acpi::madt_entry_io_apic_int_source_override*>(entries);
+            m_IntSrcOverrides.push_back(*addr);
+            break;
+        }
         default:
             break;
         }
@@ -90,6 +95,7 @@ void acpi::CApic::ParseMadtVariableTable(acpi::madt_header* madt)
         entries += entrySize;
     } while (remaining > 0);
 }
+
 
 uint8_t acpi::CApic::IoGetMaximumRedirectionEntries()
 {
@@ -111,7 +117,7 @@ acpi::CApic::IoGetRedirectionEntry(uint8_t idx)
     uint32_t actual = 0x10 + idx * 2;
     uint32_t lower = this->ReadIo(actual);
     uint64_t higher = this->ReadIo(actual + 1);
-    return ((higher << 32) | lower);
+    return io_apic_redir_entry((higher << 32) | lower);
 }
 
 void acpi::CApic::IoSetRedirectionEntry(uint8_t idx, acpi::io_apic_redir_entry entry)
@@ -123,8 +129,9 @@ void acpi::CApic::IoSetRedirectionEntry(uint8_t idx, acpi::io_apic_redir_entry e
     }
 
     uint8_t actual = 0x10 + idx * 2;
-    this->WriteIo(actual + 1, entry & 0xFFFFFFFF);
-    this->WriteIo(actual, entry >> 32);
+    auto enc = entry.Encode();
+    this->WriteIo(actual, enc & 0xFFFFFFFF);
+    this->WriteIo(actual + 1, enc >> 32);
 }
 
 void acpi::CApic::WriteIo(uint8_t reg, uint32_t value)
@@ -172,7 +179,35 @@ acpi::CApic::LocalGetTimer()
     return m_Timer;
 }
 
-void acpi::CApic::EndOfInterrupt()
+uint64_t acpi::CApic::GetGlobalSystemBase() const
 {
-    this->WriteLocal(0xB0, 0);
+    return m_GlobalSystemBase;
+}
+
+acpi::madt_entry_io_apic_int_source_override*
+acpi::CApic::GetInterruptOverride(int irq)
+{
+    Warn("irq length=%i, this=0x%p\n", m_IntSrcOverrides.size(), this);
+    auto pred = [irq](const madt_entry_io_apic_int_source_override& ovr)
+        {
+            return ovr.IrqSource == irq;
+        };
+    auto iter = std::find_if(m_IntSrcOverrides.begin(), m_IntSrcOverrides.end(), pred);
+    if (iter == m_IntSrcOverrides.end())
+    {
+        return nullptr;
+    }
+
+    return iter + 0;
+}
+
+void acpi::EndOfInterrupt()
+{
+    if (_localApicAddress == nullptr)
+    {
+        Error("Cannot send EOI!\n");
+        return;
+    }
+    
+    _localApicAddress[0xB0] = 0;
 }

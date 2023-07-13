@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <vector>
 #include "acpi/tables.h"
 
 #define IOREDTBL_VECTOR 0xFF
@@ -24,7 +25,48 @@ enum apic_local_vector_table : unsigned short
     kLocalVectorTable_Error = 0x370
 };
 
-using io_apic_redir_entry = uint64_t;
+struct io_apic_redir_entry 
+{
+    io_apic_redir_entry()
+    {
+    }
+
+    constexpr io_apic_redir_entry(uint64_t raw)
+        : Vector(raw & 0xFF),
+          DeliveryMode((raw >> 8) & 7),
+          DestinationMode((raw >> 11) & 1),
+          DeliveryStatus((raw >> 12) & 1),
+          PinPolarity((raw >> 13) & 1),
+          RemoteIrr((raw >> 14) & 1),
+          TriggerMode((raw >> 15) & 1),
+          Mask((raw >> 14) & 1),
+          Destination((raw >> 56) & 255)
+    {
+    }
+
+    constexpr uint64_t Encode()
+    {
+        return Vector 
+                | (DeliveryMode << 8)
+                | (DestinationMode << 11)
+                | (DeliveryStatus << 12)
+                | (PinPolarity << 13)
+                | (RemoteIrr << 14)
+                | (TriggerMode << 15)
+                | (Mask << 16)
+                | (Destination << 56);
+    }
+
+    uint8_t Vector;
+    uint16_t DeliveryMode;
+    uint16_t DestinationMode;
+    uint16_t DeliveryStatus;
+    uint16_t PinPolarity;
+    uint16_t RemoteIrr;
+    uint16_t TriggerMode;
+    uint16_t Mask;
+    uint64_t Destination;
+};
 
 class CApicTimer;
 
@@ -37,16 +79,15 @@ public:
     ~CApic();
 
     CApicTimer* LocalGetTimer();
-    void EndOfInterrupt();
     void LocalGetId();
     void LocalUnmaskAll();
     void LocalSetLvt(apic_local_vector_table lv, uint8_t vector);
 
-    void DumpIrrIsrTmr();
-
     uint8_t IoGetMaximumRedirectionEntries();
     io_apic_redir_entry IoGetRedirectionEntry(uint8_t idx);
     void IoSetRedirectionEntry(uint8_t idx, io_apic_redir_entry entry);
+    madt_entry_io_apic_int_source_override* GetInterruptOverride(int irq);
+    uint64_t GetGlobalSystemBase() const;
 private:
     void WriteIo(uint8_t reg, uint32_t value);
     uint32_t ReadIo(uint8_t reg);
@@ -56,10 +97,15 @@ private:
     void ParseMadtVariableTable(acpi::madt_header* header);
 
 private:
+    std::vector<acpi::madt_entry_io_apic_int_source_override> m_IntSrcOverrides;
+
     CApicTimer* m_Timer = nullptr;
     volatile uint32_t* m_IoApicAddress;
     volatile uint32_t* m_LapicAddress;
+    uint32_t m_GlobalSystemBase;
     bool m_OverrideLocalApic;
 };
+
+void EndOfInterrupt();
 
 }

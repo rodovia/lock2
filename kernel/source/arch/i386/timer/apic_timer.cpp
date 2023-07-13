@@ -1,10 +1,13 @@
 #include "apic_timer.h"
 #include "arch/i386/apic.h"
 #include "alloc/physical.h"
+#include "pit.h"
 
 static void CalibrateTimer()
 {
-    
+    CPit& pit = CPit::GetInstance();
+    pit.SetReloadValue(100);
+    pit.SetReloadValue(200);
 }
 
 acpi::CApicTimer::CApicTimer(acpi::CApic* apic)
@@ -15,6 +18,7 @@ acpi::CApicTimer::CApicTimer(acpi::CApic* apic)
 void acpi::CApicTimer::Configure(apic_timer_mode mode)
 {
     /* Divide by 16 */
+    CalibrateTimer();
     m_Apic->WriteLocal(0x3E0, 0x3);
     uint32_t tm = 32 | (mode << 17);
     tm &= ~(1 << 16);

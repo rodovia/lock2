@@ -94,7 +94,7 @@ static void* LinklStratg(size_t bytes) /* BUG: 2 free blocks may point to
         {
             break;
         }
-        Warn("tmp=0x%p, tmp->Next=0x%p\n", tmp, tmp->Next);
+
         tmp = tmp->Next;
     }
 

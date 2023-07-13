@@ -5,7 +5,14 @@
 class CPit
 {
 public:
-    CPit(unsigned int msFrequency);
+    static CPit& GetInstance()
+    {
+        static CPit c;
+        return c;
+    }
 
-    
+    void SetReloadValue(uint16_t value);
+    uint16_t GetCurrentCount();
+private:
+    CPit();
 };

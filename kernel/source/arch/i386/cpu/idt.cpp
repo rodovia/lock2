@@ -46,8 +46,7 @@ void IdtGenericHandler(interrupt_frame* frame, int code, int error, register_sta
 eoi:
     if (code >= 32)
     {
-        acpi::CApic apic;
-        apic.EndOfInterrupt();
+        acpi::EndOfInterrupt();
     }
     return;
 }

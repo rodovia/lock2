@@ -54,8 +54,8 @@ void sched::CScheduler::ThinkDeep(full_register_state regState)
     {
         m_Index = 0;
     }
-    acpi::CApic c;
-    c.EndOfInterrupt();
+    
+    acpi::EndOfInterrupt();
     CThread*& current = m_Threads->GetByIndex(m_Index);
 
     m_Quantum = 100;

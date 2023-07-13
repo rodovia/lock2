@@ -88,7 +88,7 @@ using port16 = CPort<unsigned short>;
 using port32 = CPort<unsigned int>;
 
 template<class ReadSize>
-constexpr auto GetRegister(uint16_t port, uint16_t reg) -> CPort<ReadSize>
+constexpr CPort<ReadSize> GetRegister(uint16_t port, uint16_t reg)
 {
     return port + reg;
 }
