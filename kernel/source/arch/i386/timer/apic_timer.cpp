@@ -1,13 +1,11 @@
 #include "apic_timer.h"
 #include "arch/i386/apic.h"
 #include "alloc/physical.h"
-#include "pit.h"
+#include "arch/i386/timer/hpet.h"
 
 static void CalibrateTimer()
 {
-    CPit& pit = CPit::GetInstance();
-    pit.SetReloadValue(100);
-    pit.SetReloadValue(200);
+    acpi::AssociateHpetInterrupt();
 }
 
 acpi::CApicTimer::CApicTimer(acpi::CApic* apic)

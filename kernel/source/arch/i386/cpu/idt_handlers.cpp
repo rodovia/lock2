@@ -100,7 +100,7 @@ static void Interrupt12(interrupt_frame* frame)
 static void Interrupt13(interrupt_frame* frame, int error, register_state* state)
 {
     _abortwrite("General protection fault; selector=%i\n", error);
-    dbg::DumpStackFrame((struct stackframe*)state->Rbp);
+    DumpFrame(frame);
     HLT;
 }
 
@@ -229,6 +229,11 @@ static void Interrupt32(interrupt_frame* frame, register_state* state)
     sched::CScheduler::Think(st);
 }
 
+static void Interrupt33(interrupt_frame* frame, register_state* state)
+{
+
+}
+
 #define _(E) reinterpret_cast<void*>(E)
 
 void* rotTable[] = {
@@ -240,5 +245,5 @@ void* rotTable[] = {
     _(Interrupt20), _(Interrupt21), _(Interrupt22), _(Interrupt23),
     _(Interrupt24), _(Interrupt25), _(Interrupt26), _(Interrupt27),
     _(Interrupt28), _(Interrupt29), _(Interrupt30), _(Interrupt31),
-    _(Interrupt32),
+    _(Interrupt32), _(Interrupt33),
 };
