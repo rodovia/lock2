@@ -229,7 +229,8 @@ static void Interrupt32(interrupt_frame* frame, register_state* state)
     sched::CScheduler::Think(st);
 }
 
-static void Interrupt33(interrupt_frame* frame, register_state* state)
+/* HPET timer */
+static void Interrupt35(interrupt_frame* frame, register_state* state)
 {
 
 }
@@ -245,5 +246,5 @@ void* rotTable[] = {
     _(Interrupt20), _(Interrupt21), _(Interrupt22), _(Interrupt23),
     _(Interrupt24), _(Interrupt25), _(Interrupt26), _(Interrupt27),
     _(Interrupt28), _(Interrupt29), _(Interrupt30), _(Interrupt31),
-    _(Interrupt32), _(Interrupt33),
+    _(Interrupt32), nullptr, nullptr, _(Interrupt35)
 };

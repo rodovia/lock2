@@ -6,6 +6,8 @@
 #include "terminal.h"
 #include <algorithm>
 
+#define LAPIC_REG(R) R / sizeof(uint32_t)
+
 uint32_t volatile* _localApicAddress = nullptr;
 uint32_t volatile* _ioApicAddress = nullptr;
 
@@ -209,5 +211,17 @@ void acpi::EndOfInterrupt()
         return;
     }
     
-    _localApicAddress[0xB0] = 0;
+    _localApicAddress[LAPIC_REG(0xB0)] = 0;
+}
+
+acpi::cpuid_t acpi::GetCurrentCpuId()
+{
+    if (_localApicAddress == nullptr)
+    {
+        Error("Cannot get CPU id!\n");
+        return -1;
+    }
+
+    /* Should I mask the upper 6 bits on Pentium processors? */
+    return _localApicAddress[LAPIC_REG(0x20)] >> 24;
 }

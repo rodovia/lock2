@@ -15,6 +15,9 @@
 namespace acpi
 {
 
+/* Unrelated to the homonymous instruction. */
+using cpuid_t = uint32_t;
+
 enum apic_local_vector_table : unsigned short
 {
     kLocalVectorTable_Timer = 0x320,
@@ -107,5 +110,6 @@ private:
 };
 
 void EndOfInterrupt();
+cpuid_t GetCurrentCpuId();
 
 }

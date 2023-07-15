@@ -83,7 +83,7 @@ void CIdt::InitDefaults()
         this->AddEntry(i, idtTable[i]);
     }
 
-    for (i = 0; i < 33; i++)
+    for (i = 0; i < 35; i++)
     {
         this->AddRoutine(i, &rotTable[i]);
     }

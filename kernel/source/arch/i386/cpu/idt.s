@@ -103,6 +103,8 @@ IdtGenericHandlerPrologue 31
 IdtGenericHandlerPrologue 32
 IdtGenericHandlerPrologue 33
 IdtGenericHandlerPrologue 34
+IdtGenericHandlerPrologue 35
+IdtGenericHandlerPrologue 36
 
 global idtTable
 idtTable:

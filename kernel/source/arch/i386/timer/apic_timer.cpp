@@ -1,11 +1,14 @@
 #include "apic_timer.h"
 #include "arch/i386/apic.h"
 #include "alloc/physical.h"
-#include "arch/i386/timer/hpet.h"
+#include "hpet.h"
+#include "time_units.h"
 
 static void CalibrateTimer()
 {
+    acpi::InitializeHpet();
     acpi::AssociateHpetInterrupt();
+    acpi::PrepareHpetSleep(20s);
 }
 
 acpi::CApicTimer::CApicTimer(acpi::CApic* apic)

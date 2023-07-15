@@ -1,6 +1,7 @@
 #pragma once
 
 #include "acpi/tables.h"
+#include "time_units.h"
 
 namespace acpi
 {
@@ -16,12 +17,14 @@ hpet_header : public system_desc_header
     uint8_t PageProtectionOem; /*< In spec: "Page Protection And OEM Attribute" */     
 };
 
+using femtosec_t = uint64_t;
+
 /* We only use HPET timer for a single purpose:
     To calibrate the Local APIC. So, there is no
     need to create a class for that. */
 
 void InitializeHpet();
-
 void AssociateHpetInterrupt();
+void PrepareHpetSleep(time::nanosec_t ns);
 
 }
