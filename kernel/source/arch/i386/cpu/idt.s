@@ -109,7 +109,7 @@ IdtGenericHandlerPrologue 36
 global idtTable
 idtTable:
 %assign i 0
-%rep 34
+%rep 36
     dq IdtGenericHandler%+i
 %assign i i + 1
 %endrep

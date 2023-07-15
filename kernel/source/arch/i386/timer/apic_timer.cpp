@@ -8,7 +8,7 @@ static void CalibrateTimer()
 {
     acpi::InitializeHpet();
     acpi::AssociateHpetInterrupt();
-    acpi::PrepareHpetSleep(20s);
+    acpi::PrepareHpetDelay(1s);
 }
 
 acpi::CApicTimer::CApicTimer(acpi::CApic* apic)

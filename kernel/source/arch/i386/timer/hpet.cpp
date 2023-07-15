@@ -18,11 +18,10 @@
 #define TO_NS(Fs) Fs / 1000000
 #define TO_FS(Ns) Ns * 1000000
 
-bool _hpetSleepFlag = false;
+volatile bool _hpetSleepFlag = true;
 
 static uint8_t FindSuitableIrq(uint32_t irqs)
 {
-    Warn("irqs=0x%p", irqs);
     uint8_t bitpos = 0;
     for (bitpos = 1; bitpos < 32; bitpos++)
     {
@@ -84,7 +83,8 @@ void acpi::AssociateHpetInterrupt()
     intr.Destination = acpi::GetCurrentCpuId();
     apic.IoSetRedirectionEntry(finalInt, intr);
 }
-void acpi::PrepareHpetSleep(time::nanosec_t ns)
+
+void acpi::PrepareHpetDelay(time::nanosec_t ns)
 {
     auto hd = reinterpret_cast<hpet_header*>(FindTable("HPET"));
     auto ptr = reinterpret_cast<uint64_t volatile*>(hd->BaseAddress.Address);
@@ -101,7 +101,8 @@ void acpi::PrepareHpetSleep(time::nanosec_t ns)
     /* Reenable the timer */
     tmr |= 1;
     ptr[GENCFG_REG] = tmr;
-
+    
+    asm volatile("sti");
     while (_hpetSleepFlag)
     {
         asm volatile("hlt");

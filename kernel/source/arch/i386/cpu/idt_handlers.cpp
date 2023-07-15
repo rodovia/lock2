@@ -9,6 +9,8 @@
 #define HLT do { asm volatile("cli; hlt"); __builtin_unreachable(); } while (0)
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 
+extern volatile bool _hpetSleepFlag;
+
 static void DumpFrame(interrupt_frame* frame)
 {
     CTerminal::WriteFormatted("RIP=0x%p, RSP=0x%p\n", frame->Rip, frame->Rsp);
@@ -232,7 +234,7 @@ static void Interrupt32(interrupt_frame* frame, register_state* state)
 /* HPET timer */
 static void Interrupt35(interrupt_frame* frame, register_state* state)
 {
-
+    _hpetSleepFlag = false;
 }
 
 #define _(E) reinterpret_cast<void*>(E)

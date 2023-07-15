@@ -78,12 +78,12 @@ void CIdt::AddRoutine(unsigned char vector, void* routine)
 void CIdt::InitDefaults()
 {
     uint64_t i;
-    for (i = 0; i < 35; i++)
+    for (i = 0; i < 36; i++)
     {
         this->AddEntry(i, idtTable[i]);
     }
 
-    for (i = 0; i < 35; i++)
+    for (i = 0; i < 36; i++)
     {
         this->AddRoutine(i, &rotTable[i]);
     }
