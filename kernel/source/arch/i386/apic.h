@@ -109,6 +109,8 @@ private:
     bool m_OverrideLocalApic;
 };
 
+uint32_t ReadLocal(uint32_t reg);
+void WriteLocal(uint32_t reg, uint32_t value);
 void EndOfInterrupt();
 cpuid_t GetCurrentCpuId();
 

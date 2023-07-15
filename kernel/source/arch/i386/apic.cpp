@@ -189,7 +189,6 @@ uint64_t acpi::CApic::GetGlobalSystemBase() const
 acpi::madt_entry_io_apic_int_source_override*
 acpi::CApic::GetInterruptOverride(int irq)
 {
-    Warn("irq length=%i, this=0x%p\n", m_IntSrcOverrides.size(), this);
     auto pred = [irq](const madt_entry_io_apic_int_source_override& ovr)
         {
             return ovr.IrqSource == irq;
@@ -224,4 +223,14 @@ acpi::cpuid_t acpi::GetCurrentCpuId()
 
     /* Should I mask the upper 6 bits on Pentium processors? */
     return _localApicAddress[LAPIC_REG(0x20)] >> 24;
+}
+
+void acpi::WriteLocal(uint32_t reg, uint32_t value)
+{
+    _localApicAddress[LAPIC_REG(reg)] = value;
+}
+
+uint32_t acpi::ReadLocal(uint32_t reg)
+{
+    return _localApicAddress[LAPIC_REG(reg)];
 }
