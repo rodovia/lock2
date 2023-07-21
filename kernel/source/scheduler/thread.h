@@ -1,6 +1,7 @@
 #pragma once
 
 #include "arch/i386/cpu/idt.h"
+#include "arch/i386/timer/time_units.h"
 
 namespace sched
 {
@@ -14,6 +15,8 @@ enum thread_creation_flags
     kThreadCreateSuspended = 0x001,
     kThreadKernelMode = 0x010
 };
+
+void Sleep(time::millisec_t ticks);
 
 enum thread_suspend_reason
 {
@@ -36,6 +39,7 @@ public:
             void* data,
             thread_creation_flags flags
         );
+    ~CThread();
 
     void Start();
     full_register_state* GetState() const;
@@ -47,6 +51,7 @@ private:
     bool m_Suspended;
     thread_suspend_reason m_SuspendReason;
     full_register_state* m_RegState;
+    void* m_StackStart;
 };
 
 }

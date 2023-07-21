@@ -1,22 +1,16 @@
 #include "thread.h"
 #include "alloc/physical.h"
 #include "arch/i386/cpu/idt.h"
+#include "arch/i386/timer/time_units.h"
 #include "scheduler/scheduler.h"
 #include "terminal.h"
 
-static void _ThreadWrapper(sched::CThread* thiz, 
-                            void* routine, void* data)
+void sched::Sleep(time::millisec_t ticks)
 {
-    sched::CScheduler& scheduler = sched::CScheduler::GetInstance();
-    auto threadMain = reinterpret_cast<sched::thread_start_routine>(routine);
-    threadMain(data);
-
-    thiz->SetSuspended(true, sched::kThreadSuspendReasonReturned);
-    scheduler.RemoveThread(thiz);
-    while(true)
-    {
-        asm volatile("hlt");
-    }
+    auto t = CScheduler::GetCurrentThread();
+    auto sche = CScheduler::GetInstance();
+    t->SetSuspended(true, kThreadSuspendReasonWaiting);
+    sche.AddSuspendedThread(t, ticks);
 }
 
 sched::CThread::CThread(sched::thread_start_routine routine,
@@ -25,20 +19,27 @@ sched::CThread::CThread(sched::thread_start_routine routine,
     : m_Suspended(true),
       m_SuspendReason(kThreadSuspendReasonWaiting)
 {
-    m_RegState = new full_register_state;
-    m_RegState->Pointers.Cs = (flags & kThreadKernelMode) ? 3 * 8 
+    m_StackStart = pm::Alloc(4096);
+    m_RegState = (full_register_state*)pm::Alloc(sizeof(full_register_state));
+    memset(m_RegState, 0, sizeof(full_register_state));
+
+    m_RegState->Pointers.Cs = (flags & kThreadKernelMode) ? 3 * 8
                                                          : 6 * 8;
-    m_RegState->Pointers.Rip = (uword)_ThreadWrapper;
+    m_RegState->Pointers.Rip = (uword)routine;
     m_RegState->Pointers.Ss = 4 * 8;
-    m_RegState->Pointers.Rsp = (uword)pm::AlignedAlloc(4096, 8);
-    m_RegState->OtherRegisters.Rdi = (uword)this;
-    m_RegState->OtherRegisters.Rsi = (uword)routine;
-    m_RegState->OtherRegisters.Rdx = (uword)data;
+    m_RegState->Pointers.Rsp = (uword)m_StackStart + 4096;
+    m_RegState->OtherRegisters.Rdi = (uword)data;
 
     if (!(flags & kThreadCreateSuspended))
     {
         this->Start();
     }
+}
+
+sched::CThread::~CThread()
+{
+    pm::Free(m_RegState);
+    pm::Free(m_StackStart);
 }
 
 void sched::CThread::SetSuspended(bool value, thread_suspend_reason reason)

@@ -2,6 +2,7 @@
 #include "alloc/physical.h"
 
 #include "scheduler/scheduler.h"
+#include "scheduler/thread.h"
 #include "terminal.h"
 #include "limine.h"
 #include "arch/i386/cpu/gdt.h"
@@ -16,6 +17,7 @@
 
 static void hcf(void);
 static limine_memmap_entry* DetermineUsableEntry();
+static void Thread(void*);
 
 extern "C" 
 void KeStartThunk()
@@ -33,12 +35,13 @@ void KeStartThunk()
     acpi::ParseTables();
     driver::LoadDrivers();
 
+    Info("Finished execution!\n");
     auto& c = sched::CScheduler::GetInstance();
     c.Enable();
 
-    Info("Finished execution!\n");
     hcf();
 }
+
 
 static limine_memmap_entry* DetermineUsableEntry()
 {
@@ -48,8 +51,6 @@ static limine_memmap_entry* DetermineUsableEntry()
     for (uint64_t i = 0; i < re->entry_count; i++)
     {
         limine_memmap_entry* c = re->entries[i];
-        /*Info("Memory map: base=0x%p, length=%i or %i KB, type=%i\n", c->base, c->length, 
-            c->length / 1024, c->type);*/
         if (c->type == LIMINE_MEMMAP_USABLE &&
             c->length >= max)
         {
@@ -63,7 +64,8 @@ static limine_memmap_entry* DetermineUsableEntry()
 
 static void hcf(void) 
 {
-    for (;;) {
-        __asm__ ("hlt");
+    for (;;) 
+    {
+        asm ("hlt");
     }
 }

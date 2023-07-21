@@ -1,4 +1,5 @@
 #include "physical.h"
+#include "arch/i386/debug/stackframe.h"
 #include <stddef.h>
 #include <stdint.h>
 
@@ -84,8 +85,7 @@ static void* BumpStrtg(size_t bytes)
 
 /* "Allocates" (finds a free block of size >= *bytes*) a block.
     Similar to how Lockdown does it. */
-static void* LinklStratg(size_t bytes) /* BUG: 2 free blocks may point to 
-                                          themselves, creating an infinite loop */
+static void* LinklStratg(size_t bytes)
 {
     mem_block* tmp = reinterpret_cast<mem_block*>(global->FreeList);
     while (tmp->Next != nullptr)

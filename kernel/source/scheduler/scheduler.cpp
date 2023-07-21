@@ -1,5 +1,4 @@
 #include "scheduler.h"
-#include "alloc/physical.h"
 #include "arch/i386/cpu/idt.h"
 #include "scheduler/thread.h"
 #include "arch/i386/apic.h"
@@ -14,6 +13,15 @@ sched::CScheduler::CScheduler()
       m_Quantum(0),
       m_Index(0)
 {
+    CThread* thr = new CThread(
+        [](void*) 
+        { 
+            while (true) 
+            { 
+                asm volatile("hlt");
+            } 
+        }, nullptr, kThreadKernelMode);
+    this->AddThread(thr);
 }
 
 void sched::CScheduler::Think(full_register_state regState)
@@ -38,6 +46,7 @@ void sched::CScheduler::ThinkDeep(full_register_state regState)
         return;
     }
 
+    this->ThinkSuspendedThreads();
     if (m_ThreadCount == 0)
     {
         return;
@@ -57,8 +66,12 @@ void sched::CScheduler::ThinkDeep(full_register_state regState)
     
     acpi::EndOfInterrupt();
     CThread*& current = m_Threads->GetByIndex(m_Index);
+    if (current == nullptr)
+    {
+        return;
+    }
 
-    m_Quantum = 100;
+    m_Quantum = 10;
     SchSwitchTaskKernel(current->m_RegState);
 }
 
@@ -70,13 +83,8 @@ void sched::CScheduler::AddThread(CThread* thread)
         m_Threads = new thread_list;
     }
 
-    thread_list* tmp = m_Threads;
-    while (tmp->Next != nullptr)
-    {
-        tmp = tmp->Next;
-    }
+    m_Threads->Append(thread);
     m_ThreadCount++;
-    tmp->Next = new thread_list(thread);
     LeaveCriticalZone();
 }
 
@@ -89,7 +97,7 @@ void sched::CScheduler::RemoveThread(CThread *thread)
 {
     thread_list* tmp = m_Threads;
     thread_list* oldTmp;
-    while(tmp->Thread != thread)
+    while(tmp->Item != thread)
     {
         oldTmp = tmp;
         tmp = tmp->Next;
@@ -114,4 +122,57 @@ sched::CThread*& sched::CScheduler::GetThread(thread_t id)
 {
     auto thiz = GetInstance();
     return thiz.m_Threads->GetByIndex(id);
+}
+
+void sched::CScheduler::AddSuspendedThread(CThread *thread, time::millisec_t ticks)
+{
+    EnterCriticalZone();
+    if (m_SuspendedThreads == nullptr)
+    {
+        m_SuspendedThreads = new linked_list<thread_sleep_info>();
+    }
+
+    auto t = new thread_sleep_info{thread, ticks};
+    m_SuspendedThreads->Append(t);
+    LeaveCriticalZone();
+}
+
+void sched::CScheduler::RemoveSuspendedThread(thread_sleep_info* i)
+{
+    linked_list<thread_sleep_info>* tmp = m_SuspendedThreads,
+                                  *  oldtmp;
+
+    while (tmp->Next != nullptr)
+    {
+        if (tmp->Item == i)
+        {
+            oldtmp->Next = tmp->Next;
+            return;            
+        }
+
+        oldtmp = tmp;
+        tmp = tmp->Next;
+    }
+}
+
+void sched::CScheduler::ThinkSuspendedThreads()
+{
+    auto head = m_SuspendedThreads;
+    if (head == nullptr)
+    {
+        return;
+    }
+
+    while (head->Next != nullptr)
+    {
+        auto item = head->Item;
+        item->RemainingTicks--;
+        if (head->Item->RemainingTicks <= 0)
+        {
+            this->RemoveSuspendedThread(item);
+            item->Thread->SetSuspended(false, kThreadSuspendReasonNotSuspended);
+        }
+
+        head = head->Next;
+    }
 }
