@@ -11,7 +11,8 @@ KERNEL_CXXFLAGS=$(CXXFLAGS) $(KERNEL_EXTRAFLAGS)
 LDFLAGS=-nostdlib -static -m elf_x86_64 -z max-page-size=0x1000 -T kernel/linker.ld
 
 ASFILES=arch/i386/entry/crti.s arch/i386/cpu/sgms.s arch/i386/cpu/idt.s \
-		arch/i386/memcpy.s arch/i386/spinlock.s arch/i386/task_switch.s
+		arch/i386/memcpy.s arch/i386/spinlock.s arch/i386/task_switch.s  \
+		arch/i386/timer/tsc.s
 ASSOURCES=$(addprefix kernel/source/,$(ASFILES))
 ASBUILD=$(addprefix $(KERNELBUILD)/,$(addsuffix .o,$(ASFILES)))
 
@@ -25,7 +26,8 @@ CXXFILES=start_thunk.cpp terminal.cpp requests.cpp klibc/string.cpp    \
 		arch/i386/debug/elf.cpp dllogic/api/dhelp.cpp pci/pci.cpp			  \
 		arch/i386/itaniumabi_runtime/icxxabi.cpp klibc/abort.cpp 			   \
 		acpi/acpi_handlers.cpp scheduler/scheduler.cpp scheduler/thread.cpp     \
-		scheduler/semaphore.cpp arch/i386/timer/hpet.cpp arch/i386/thread_finish.cpp
+		scheduler/semaphore.cpp arch/i386/timer/hpet.cpp 						 \
+		arch/i386/thread_finish.cpp
 CXXSOURCES=$(addprefix $(KERNELSOURCE)/,$(CXXFILES))
 CXXBUILD=$(addprefix $(KERNELBUILD)/,$(addsuffix .o,$(CXXFILES)))
 CXXHEADERS=$(patsubst %.cpp.o,%.d,$(CXXBUILD))

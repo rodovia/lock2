@@ -5,12 +5,38 @@
 #include "scheduler/scheduler.h"
 #include "terminal.h"
 
+static void AsyncTimerThread(void* data)
+{
+    auto tmr = reinterpret_cast<sched::thread_async_timer_data*>(data);
+    if (tmr->Routine == nullptr)
+    {
+        Warn("Async timer callback is nullptr!\n");
+        return;
+    }
+
+    sched::Sleep(tmr->Ticks);
+    tmr->Routine(tmr->Data);
+}
+
 void sched::Sleep(time::millisec_t ticks)
 {
     auto t = CScheduler::GetCurrentThread();
     auto sche = CScheduler::GetInstance();
     t->SetSuspended(true, kThreadSuspendReasonWaiting);
     sche.AddSuspendedThread(t, ticks);
+}
+
+void sched::AsyncTimer(time::millisec_t ticks, 
+                        async_timer_routine routine,
+                        void* data)
+{
+    auto d = new thread_async_timer_data();
+    d->Data = data;
+    d->Routine = routine;
+    d->Ticks = ticks;
+
+    CThread* thread = new CThread(AsyncTimerThread, d, kThreadKernelMode);
+    sched::CScheduler::GetInstance().AddThread(thread);
 }
 
 sched::CThread::CThread(sched::thread_start_routine routine,

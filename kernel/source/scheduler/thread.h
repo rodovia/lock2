@@ -9,6 +9,7 @@ namespace sched
 using ::full_register_state;
 
 using thread_start_routine = void(*)(void*);
+using async_timer_routine = void(*)(void*);
 
 enum thread_creation_flags
 {
@@ -16,7 +17,17 @@ enum thread_creation_flags
     kThreadKernelMode = 0x010
 };
 
+struct thread_async_timer_data
+{
+    time::millisec_t Ticks;
+    async_timer_routine Routine;
+    void* Data;
+};
+
 void Sleep(time::millisec_t ticks);
+void AsyncTimer(time::millisec_t ticks, 
+                async_timer_routine routine,
+                void* data);
 
 enum thread_suspend_reason
 {

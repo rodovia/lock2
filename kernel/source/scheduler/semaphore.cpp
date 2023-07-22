@@ -1,4 +1,5 @@
 #include "semaphore.h"
+#include "arch/i386/timer/time_units.h"
 #include "scheduler/scheduler.h"
 #include "scheduler/thread.h"
 #include <cstddef>
@@ -12,6 +13,12 @@ void hlt()
 constexpr static int abs(int v)
 {
     return v < 0 ? v * (-1) : v;
+}
+
+static void SemaphoreTrigger(void* f)
+{
+    auto flag = reinterpret_cast<bool*>(f);
+    (*flag) = false;
 }
 
 sched::semaphore::semaphore(int slots)
@@ -47,9 +54,34 @@ void sched::semaphore::Wait()
 
         while(true)
         {
-            asm volatile("hlt");
+            hlt();
         }
     }
+}
+
+int sched::semaphore::Wait(time::millisec_t timeout)
+{
+    m_Counter--;
+    if (m_Counter < 0)
+    {
+        bool* flag = new bool;
+        AsyncTimer(timeout, SemaphoreTrigger, flag);
+
+        while (m_Counter < 0 && *flag)
+        {
+            hlt();
+        }
+
+        if (!flag)
+        {
+            delete flag;
+            return kSemaphoreErrorTimedOut;
+        }
+
+        delete flag;
+    }
+
+    return kSemaphoreErrorOk;
 }
 
 sched::mutex::mutex()
@@ -88,4 +120,29 @@ void sched::mutex::Lock()
     {
         hlt();
     }
+}
+
+int sched::mutex::Lock(time::millisec_t timeout)
+{
+    if (m_Flag)
+    {
+        m_Flag = false;
+        return kSemaphoreErrorOk;
+    }
+
+    bool* flag = new bool(true);
+    AsyncTimer(timeout, SemaphoreTrigger, flag);
+    while (!m_Flag && flag)
+    {
+        hlt();
+    }
+    
+    if (!flag)
+    {
+        delete flag;
+        return kSemaphoreErrorTimedOut;
+    }
+
+    delete flag;
+    return kSemaphoreErrorOk;
 }

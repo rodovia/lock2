@@ -2,7 +2,6 @@
 #include "alloc/physical.h"
 
 #include "scheduler/scheduler.h"
-#include "scheduler/thread.h"
 #include "terminal.h"
 #include "limine.h"
 #include "arch/i386/cpu/gdt.h"
@@ -17,7 +16,6 @@
 
 static void hcf(void);
 static limine_memmap_entry* DetermineUsableEntry();
-static void Thread(void*);
 
 extern "C" 
 void KeStartThunk()
@@ -38,7 +36,6 @@ void KeStartThunk()
     Info("Finished execution!\n");
     auto& c = sched::CScheduler::GetInstance();
     c.Enable();
-
     hcf();
 }
 

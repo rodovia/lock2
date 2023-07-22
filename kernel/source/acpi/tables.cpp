@@ -61,6 +61,9 @@ void acpi::ParseTables()
     auto rsdt = GetRootTable();
     madt_header* madt = reinterpret_cast<madt_header*>(FindTable("APIC", rsdt));
 
+    AcpiInitializeSubsystem();
+    AcpiInitializeTables(nullptr, 0, true);
+
     CApic apic(madt);
     apic.LocalUnmaskAll();
     CApicTimer* tmr = apic.LocalGetTimer();

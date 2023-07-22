@@ -4,9 +4,12 @@
   ...Just to adhere to ACPICA ones. 
   Try to fix it, if you are not lazy. =) */
 
+#include "acpi/tables.h"
 #include "arch/i386/port.h"
 #include "arch/i386/spinlock.h"
+#include "arch/i386/timer/hpet.h"
 #include "arch/i386/timer/tsc.h"
+#include "pci/pci.h"
 #include "scheduler/scheduler.h"
 #include "scheduler/semaphore.h"
 #include "scheduler/thread.h"
@@ -56,7 +59,7 @@ ACPI_PHYSICAL_ADDRESS
 AcpiOsGetRootPointer()
 {
     ACPI_PHYSICAL_ADDRESS root = 0;
-    AcpiFindRootPointer(&root);
+    root = (uword)acpi::GetRootTable();
     return root;
 }
 
@@ -280,13 +283,13 @@ ACPI_STATUS AcpiOsWritePort(ACPI_IO_ADDRESS Address,
     if (Width == 8)
     {
         port8 p = Address;
-        (*p) = Value;
+        (*p) = (Value & 0xFF);
         return AE_OK;
     }
     else if (Width == 16)
     {
         port16 p = Address;
-        (*p) = Value;
+        (*p) = (Value & 0xFFFF);
         return AE_OK;
     }
     else if (Width == 32)
@@ -299,6 +302,137 @@ ACPI_STATUS AcpiOsWritePort(ACPI_IO_ADDRESS Address,
     return AE_OK; /* Unreachable */
 }
 
+ACPI_STATUS
+AcpiOsReadPciConfiguration(ACPI_PCI_ID *PciId, 
+                            UINT32 Reg, 
+                            UINT64 *Value, 
+                            UINT32 Width)
+{
+    if (Width != 32)
+    {
+        Warn("AcpiOsReadPciConfiguration: the value of width" 
+            "is ignored and assumed to always be 32 (current -> %i)!\n", Width);
+    }
 
+    /* This function unconditionally returns a 32-bit value. */
+    auto device = pci::pci_device(PciId->Bus, PciId->Device, PciId->Function);
+    (*Value) = device.ReadConfigurationSpace(Reg);
+    return AE_OK;
+}
+
+ACPI_STATUS
+AcpiOsWritePciConfiguration(ACPI_PCI_ID* PciId, 
+                            UINT32 Reg, 
+                            UINT64 Value, 
+                            UINT32 Width)
+{
+    if (Width != 32)
+    {
+        Warn("AcpiOsReadPciConfiguration: the value of width" 
+            "is ignored and assumed to always be 32 (current -> %i)!\n", Width);
+    }
+
+    auto device = pci::pci_device(PciId->Bus, PciId->Device, PciId->Function);
+    device.WriteConfigurationSpace(Reg, Value & 0xFFFFFFFF);
+    return AE_OK;
+}
+
+ACPI_STATUS AcpiOsPhysicalTableOverride(ACPI_TABLE_HEADER* Header,
+                                        ACPI_PHYSICAL_ADDRESS* Replacement,
+                                        UINT32* ReplacementLength)
+{
+    (*Replacement) = 0;
+    return AE_OK;
+}
+
+void AcpiOsWaitEventsComplete()
+{
+    /* Nothing to be done. */
+}
+
+void AcpiOsStall(UINT32 Microseconds)
+{
+    acpi::PrepareHpetDelay(Microseconds);
+}
+
+ACPI_STATUS AcpiOsReadMemory(ACPI_PHYSICAL_ADDRESS Address,
+                            UINT64* Value,
+                            UINT32 Width)
+{
+    if (Width == 8)
+    {
+        auto ptr = reinterpret_cast<uint8_t*>(Address);
+        (*Value) = (*ptr);
+    }
+    else if (Width == 16) 
+    {
+        auto ptr = reinterpret_cast<uint16_t*>(Address);
+        (*Value) = (*ptr);
+    }
+    else if (Width == 32)
+    {
+        auto ptr = reinterpret_cast<uint32_t*>(Address);
+        (*Value) = (*ptr);
+    }
+    else /* Width == 64 */
+    {
+        auto ptr = reinterpret_cast<uint64_t*>(Address);
+        (*Value) = (*ptr);
+    }
+
+    return AE_OK;
+}
+
+ACPI_STATUS AcpiOsWriteMemory(ACPI_PHYSICAL_ADDRESS Address,
+                              UINT64 Value,
+                              UINT32 Width)
+{
+    if (Width == 8)
+    {
+        auto ptr = reinterpret_cast<uint8_t*>(Address);
+        (*ptr) = Value & 0xFF;
+    }
+    else if (Width == 16) 
+    {
+        auto ptr = reinterpret_cast<uint16_t*>(Address);
+        (*ptr) = Value & 0xFFFF;
+    }
+    else if (Width == 32)
+    {
+        auto ptr = reinterpret_cast<uint32_t*>(Address);
+        (*ptr) = Value & 0xFFFFFFFF;
+    }
+    else /* Width == 64 */
+    {
+        auto ptr = reinterpret_cast<uint64_t*>(Address);
+        (*ptr) = Value;
+    }
+
+    return AE_OK;
+}
+
+ACPI_STATUS
+AcpiOsInstallInterruptHandler(UINT32 InterruptNumber, 
+                              ACPI_OSD_HANDLER ServiceRoutine, 
+                              void* Context)
+{
+    Warn("TODO: Implement ACPI interurpts\n");
+    return AE_OK;
+}
+
+
+ACPI_STATUS
+AcpiOsRemoveInterruptHandler(UINT32 InterruptNumber, 
+                              ACPI_OSD_HANDLER ServiceRoutine)
+{
+    Warn("TODO: Implement ACPI interurpts\n");
+    return AE_OK;
+}
+
+void AcpiOsSleep(UINT64 Milliseconds)
+{
+    /* Maybe round down Milliseconds */
+    sched::Sleep(Milliseconds);
+}
 
 }
