@@ -20,6 +20,7 @@ extern "C"
 void IdtGenericHandler(interrupt_frame* frame, int code, int error, register_state* state)
 {
     CIdt idt;
+    
     if (code == 8 /* Double fault */
         || (code >= 10 && code <= 14) /* #TS-#PF */
         || code == 17                 /* #AC */

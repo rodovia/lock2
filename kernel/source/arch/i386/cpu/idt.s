@@ -35,6 +35,8 @@ extern IdtGenericHandler
 %macro IdtGenericHandlerPrologue 1
 IdtGenericHandler%+%1:
     push rbp
+    mov rbp, rsp
+    add rbp, 8
     _Enter
     mov rdi, rbp
     mov rsi, %1

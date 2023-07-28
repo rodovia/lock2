@@ -19,6 +19,8 @@
 #include "alloc/physical.h"
 #include "arch/i386/paging/paging.h"
 
+#include "requests.h"
+
 extern "C"
 {
 #include "acpica/acpi.h"
@@ -59,8 +61,11 @@ ACPI_PHYSICAL_ADDRESS
 AcpiOsGetRootPointer()
 {
     ACPI_PHYSICAL_ADDRESS root = 0;
-    root = (uword)acpi::GetRootTable();
-    return root;
+    Warn("rqs::IsEfi() -> %i\n", rqs::IsEfi());
+
+    uint64_t hhdm = rqs::IsEfi() ? 0 : rqs::GetHhdm()->offset;
+    uint64_t rootaddr = (uint64_t)rqs::GetRsdp()->address - hhdm;
+    return rootaddr;
 }
 
 ACPI_STATUS
@@ -80,14 +85,16 @@ AcpiOsTableOverride(ACPI_TABLE_HEADER *ExistingTable, ACPI_TABLE_HEADER **NewTab
 void*
 AcpiOsMapMemory(ACPI_PHYSICAL_ADDRESS Where, ACPI_SIZE Length)
 {
-    virtm::MapPages(nullptr, Where, Where, PT_FLAG_WRITE);
-    return (void*)Where;
+    auto hh = rqs::GetHhdm();
+    virtm::MapPages(nullptr, Where, Where + hh->offset, PT_FLAG_WRITE);
+    return reinterpret_cast<void*>(Where + hh->offset);
 }
 
 void 
 AcpiOsUnmapMemory(void* Where, ACPI_SIZE)
 {
-    virtm::UnmapPages(nullptr, (vaddr_t)Where);
+    /* No call to unmap memory because ACPICA unmaps the memory and then
+       try to use it ??? I don't know */
 }
 
 ACPI_STATUS

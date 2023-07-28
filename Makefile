@@ -7,7 +7,7 @@ CXX=clang++
 LD=ld.lld
 
 ASFLAGS=-g -F dwarf -f elf64
-CFLAGS=-g -mgeneral-regs-only -c -ffreestanding -fno-stack-protector -nostdlib \
+CFLAGS=-Os -g -mgeneral-regs-only -c -ffreestanding -fno-stack-protector -nostdlib \
 	-fno-stack-check -fno-lto -fno-stack-protector -m64 \
 	-march=x86-64 -mabi=sysv -mno-80387 -mno-red-zone
 CXXFLAGS=$(CFLAGS) -std=c++17 -pipe -Wall -Wextra \

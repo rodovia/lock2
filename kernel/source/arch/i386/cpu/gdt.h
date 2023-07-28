@@ -31,6 +31,37 @@ gdt_entry
     gdt_entry_encoded Encode() const;
 };
 
+struct  __attribute__((packed)) 
+gdt_tss_entry_encoded : public gdt_entry_encoded
+{
+    uint32_t BaseHigher32;
+    uint32_t Reserved;
+};
+
+struct gdt_entries
+{
+    gdt_entry_encoded Null;
+    gdt_entry_encoded Code32Bit;
+    gdt_entry_encoded Data32Bit;
+    gdt_entry_encoded KernelCode64Bit;
+    gdt_entry_encoded KernelData64Bit;
+    gdt_entry_encoded UserCode64Bit;
+    gdt_entry_encoded UserData64Bit;
+    gdt_tss_entry_encoded Tss;
+};
+
+struct __attribute__((packed))
+tss
+{
+    uint32_t Reserved0;
+    uint64_t Rsp[3];
+    uint64_t Reserved1;
+    uint64_t Ist[7];
+    uint64_t Reserved2;
+    uint16_t Reserved3;
+    uint16_t Iopb;
+};
+
 class CGdt
 {
 public:
@@ -39,9 +70,6 @@ public:
     void Encode();
     /* TODO: add a function that returns the first GDT entry
     which matches a specific criteria (can run code, is conformant etc...) */
-
-private:
-    gdt_entry_encoded m_Entries[10];
 
 };
 

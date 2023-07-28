@@ -118,7 +118,7 @@ static void Interrupt14(interrupt_frame* frame, int error, register_state* state
     }
     
     _abortwrite("Page fault.\nAdditional info -> CR2=0x%p, 0x%p\n", cr2, error);
-    dbg::DumpStackFrame((struct stackframe*)state->Rbp);
+    // dbg::DumpStackFrame((struct stackframe*)state->Rbp);
     DumpFrame(frame);
     HLT;
 }
