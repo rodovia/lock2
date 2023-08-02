@@ -269,6 +269,8 @@ void CTerminal::SeverityFormatted(int sev, const char* st, ...)
     CTerminal::WriteFormatted(st, ls);
     ssfn_dst.fg = 0xAAAAAA;
     va_end(ls);
+    
+    CTerminal::Write("\n");
 }
 
 void CTerminal::WriteFormatted(const char* st, ...)
@@ -289,11 +291,17 @@ void CTerminal::WriteFormatted(const char* st, va_list args)
         c = st[i];
         if (c == '%')
         {
-            /* term.WriteChar(c); */
+            if (st[i + 1] == '%')
+            {
+                term.WriteChar('%');
+                continue;
+            }
+
+            term.m_FormatState = kTerminalFmtStateSpecifParse;
             continue;
         }
-        char nc = st[i - 1];
-        if (nc != '%')
+
+        if (term.m_FormatState == kTerminalFmtStateNormal)
         {
             term.WriteChar(c);
             continue;
@@ -301,9 +309,6 @@ void CTerminal::WriteFormatted(const char* st, va_list args)
 
         switch (c)
         {
-        case '%':
-            term.WriteChar('%');
-            break;
         case 'i':
         {
             int arg = va_arg(args, int);
@@ -317,6 +322,7 @@ void CTerminal::WriteFormatted(const char* st, va_list args)
             break;
         }
         case 'p':
+        case 'X':
         {
             void* arg = va_arg(args, void*);
             WriteNumber(reinterpret_cast<uint64_t>(arg), 16);
@@ -328,7 +334,23 @@ void CTerminal::WriteFormatted(const char* st, va_list args)
             CTerminal::Write(str);
             break;
         }
+
+        /* ACPICA compatibility. It expects a full-blown,
+           standards-compliant printf implementation, which
+           we do not have.  */
+        case '1':
+        case '2':
+        case '3':
+        case '4':
+        case '5':
+        case '6':
+        case '7':
+        case '8':
+        case '9':
+            continue;
         }
+
+        term.m_FormatState = kTerminalFmtStateNormal;
     }
 }
 

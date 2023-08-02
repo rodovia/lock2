@@ -3,7 +3,7 @@
 #include "dllogic/api/dhelp.h"
 #include "internals/iterator.h"
 #include "terminal.h"
-#include "alloc/physical.h"
+
 #include <algorithm>
 
 #define PCI_MULTIFUNCTION (1 << 7)
@@ -11,7 +11,6 @@
 void pci::CPci::DiscoverDevices()
 {
     pci_device root = pci_device(0, 0, 0);
-    uint8_t tp = root.GetHeaderType();
     if ((root.GetHeaderType() & PCI_MULTIFUNCTION) == 0)
     {
         this->DiscoverBus(0);

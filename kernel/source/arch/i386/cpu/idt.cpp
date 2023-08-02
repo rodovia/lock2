@@ -1,5 +1,4 @@
 #include "idt.h"
-#include "alloc/physical.h"
 #include "arch/i386/cpu/gdt.h"
 #include "arch/i386/apic.h"
 #include <stdint.h>
@@ -9,12 +8,6 @@
 
 extern void* idtTable[];
 extern void* rotTable[];
-
-static void DumpFrame(interrupt_frame* frame)
-{
-    CTerminal::WriteFormatted("\tRIP=0x%p, RSP=0x%p\n", frame->Rip, frame->Rsp);
-    CTerminal::WriteFormatted("\tRFLAGS=0x%p frame=0x%p\n", frame->Rflags, frame);
-}
 
 extern "C"
 void IdtGenericHandler(interrupt_frame* frame, int code, int error, register_state* state)

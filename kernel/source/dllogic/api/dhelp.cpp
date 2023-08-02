@@ -38,7 +38,6 @@ CDriverManager::CDriverManager(pe::CPortableExecutable exec)
         Warn("Driver has no entry point, unloading!\n");
         return;
     }
-    Warn("Driver_Init=0x%p\n", notf);
 
     notf(this);
     if (m_Role == kDHelpDriverRoleUninit)

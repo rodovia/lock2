@@ -24,6 +24,12 @@ enum class escape_state
     SWITCH_COLORS
 };
 
+enum fmt_state
+{
+    kTerminalFmtStateSpecifParse,
+    kTerminalFmtStateNormal,
+};
+
 class CTerminal : public IDHelpTerminal
 {
 public:
@@ -58,6 +64,7 @@ private:
 
     char m_Hex[6];
     uint8_t m_HexPointer;
+    fmt_state m_FormatState = fmt_state::kTerminalFmtStateNormal;
     escape_state m_EscState = escape_state::UNKNOWN;
 };
 

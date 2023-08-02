@@ -5,6 +5,8 @@
 
 #include <terminal.h>
 
+static inline constexpr uint16_t blockSignature = 0xFAFD;
+
 struct mem_global
 {
     struct mem_block* FreeList;
@@ -79,7 +81,6 @@ static void* BumpStrtg(size_t bytes)
     global->Head = PaAdd(global->Head, bytes + sizeof(mem_block));
     global->AllocatedSize += bytes;
     memcpy(oldHead, &blo, sizeof(mem_block));
-
     return dataHead;
 }
 
@@ -114,6 +115,7 @@ mem_global* pm::Create(void* begin, size_t size)
     return gbl;
 }
 
+[[gnu::hot]]
 void* pm::Alloc(size_t bytes)
 {
     if (bytes == 0)
@@ -157,9 +159,9 @@ void pm::Free(void* block)
         Warn("Free: Cannot free null ptr\n");
     }
 
+    Warn("Free: block = %p", block);
     mem_block* tmp = global->FreeList;
     mem_block* blk = (mem_block*)(reinterpret_cast<uint8_t*>(block) - sizeof(mem_block));
-
     blk->Next = nullptr;
     global->AllocatedSize -= blk->BlockSize;
     if (tmp == nullptr)

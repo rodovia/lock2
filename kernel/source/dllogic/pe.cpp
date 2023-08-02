@@ -60,6 +60,7 @@ void* pe::CPortableExecutable::GetSymbolAddress(std::string_view name)
 {
     if (name.empty() || !(m_Header->Characteristics & kPeCharsDll))
     {
+        Warn("Name empty or not a DLL, %p", name.empty());
         return nullptr;
     }
 
@@ -78,7 +79,6 @@ void* pe::CPortableExecutable::GetSymbolAddress(std::string_view name)
         {
             ordinal = ordt[i];
             uint64_t addr = m_OptHeader->ImageBase + addrt[ordinal].ExportRva;
-            Warn("addr=0x%p\n", addr);
             return reinterpret_cast<void*>(addr);
         }
     }

@@ -61,8 +61,6 @@ ACPI_PHYSICAL_ADDRESS
 AcpiOsGetRootPointer()
 {
     ACPI_PHYSICAL_ADDRESS root = 0;
-    Warn("rqs::IsEfi() -> %i\n", rqs::IsEfi());
-
     uint64_t hhdm = rqs::IsEfi() ? 0 : rqs::GetHhdm()->offset;
     uint64_t rootaddr = (uint64_t)rqs::GetRsdp()->address - hhdm;
     return rootaddr;
@@ -106,7 +104,8 @@ AcpiOsGetPhysicalAddress(void *LogicalAddress, ACPI_PHYSICAL_ADDRESS *PhysicalAd
 
 void* AcpiOsAllocate(ACPI_SIZE Size)
 {
-    return pm::Alloc(Size);
+    auto p = pm::Alloc(Size);
+    return p;
 }
 
 void AcpiOsFree(void* Memory)

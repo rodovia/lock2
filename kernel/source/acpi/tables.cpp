@@ -1,10 +1,6 @@
 #include "tables.h"
 
-extern "C"
-{
-#include "acpi/acpica/acpi.h"
-#include "acpi/acpica/acpixf.h"
-}
+#include "acpica.h"
 
 #include "klibc/string.h"
 #include "arch/i386/timer/apic_timer.h"
@@ -60,9 +56,17 @@ void acpi::ParseTables()
 {
     auto rsdt = GetRootTable();
     madt_header* madt = reinterpret_cast<madt_header*>(FindTable("APIC", rsdt));
+    int status;
+    
+    status = AcpiInitializeSubsystem();
+    status = AcpiInitializeTables(nullptr, 0, false);
+    status = AcpiEnableSubsystem(ACPI_FULL_INITIALIZATION);
+    if (status == AE_NO_MEMORY)
+    {
+        Error("No memory to fit ACPI subsystem\n");
+    }
 
-    AcpiInitializeSubsystem();
-    AcpiInitializeTables(nullptr, 0, true);
+    AcpiInitializeObjects(ACPI_FULL_INITIALIZATION);
 
     CApic apic(madt);
     apic.LocalUnmaskAll();

@@ -1,6 +1,5 @@
 #include "hpet.h"
 #include "acpi/tables.h"
-#include "alloc/physical.h"
 #include "arch/i386/paging/paging.h"
 #include "arch/i386/apic.h"
 
@@ -20,7 +19,8 @@
 
 volatile bool _hpetSleepFlag = true;
 
-static uint8_t FindSuitableIrq(uint32_t irqs)
+static constexpr 
+uint8_t FindSuitableIrq(uint32_t irqs)
 {
     uint8_t bitpos = 0;
     for (bitpos = 1; bitpos < 32; bitpos++)
@@ -56,7 +56,6 @@ void acpi::AssociateHpetInterrupt()
     uint64_t cap = ptr[GENCAP_REG]; /* General Capabilities */
     if ((cap & (1 << 15)) == 1) /* Legacy IRQ-capable */
     {
-        Warn("Legacy IRQ!\n");
         uint64_t tmrcfg = ptr[GENCFG_REG];
         tmrcfg |= 2; /* 0b10. Legacy IRQ enable and overall enable */
         ptr[GENCFG_REG] = tmrcfg;
@@ -65,14 +64,12 @@ void acpi::AssociateHpetInterrupt()
     }
     else 
     {
-        Warn("NO legacy IRQ!\n");
         uint64_t tmrcfg = ptr[TMRCFG_REG(0)];
         finalInt = FindSuitableIrq(tmrcfg >> 32);
         tmrcfg |= (finalInt << 9) | (1 << 2); /* IRQ line and enable interrupts */
         ptr[TMRCFG_REG(0)] = tmrcfg;
     }
 
-    Warn("finalInt=%i\n", finalInt);
     uint64_t gencfg = ptr[GENCFG_REG];
     gencfg |= 1; /* Overall enable */
     ptr[GENCFG_REG] = gencfg;
@@ -88,9 +85,7 @@ void acpi::PrepareHpetDelay(time::nanosec_t ns)
 {
     auto hd = reinterpret_cast<hpet_header*>(FindTable("HPET"));
     auto ptr = reinterpret_cast<uint64_t volatile*>(hd->BaseAddress.Address);
-
-    uint32_t ctr = TO_NS(ptr[GENCFG_REG] >> 32);
-
+    
     /* HALT the timer */
     uint64_t tmr = ptr[GENCFG_REG];
     tmr &= ~1;

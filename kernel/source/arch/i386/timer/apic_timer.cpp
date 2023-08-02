@@ -1,6 +1,5 @@
 #include "apic_timer.h"
 #include "arch/i386/apic.h"
-#include "alloc/physical.h"
 #include "hpet.h"
 #include "time_units.h"
 

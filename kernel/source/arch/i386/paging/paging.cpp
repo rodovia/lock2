@@ -10,7 +10,7 @@
 #define KB 1024
 #define MB 1024 * 1024
 
-std::vector<virtm::global_page>* globalPages = nullptr;
+std::vector<virtm::global_page> globalPages;
 
 static uint64_t* GetNextLevel(uint64_t* level, size_t offset, int flags)
 {
@@ -82,12 +82,11 @@ uint64_t* virtm::CreatePml4()
         MapPages(pml4, addr->physical_base + i, addr->virtual_base + i, PT_FLAG_WRITE);
     }
 
-    if (globalPages != nullptr)
+    if (globalPages.data() != nullptr)
     {
-        for (size_t i = 0; i < globalPages->size(); i++)
+        for (auto& p : globalPages)
         {
-            global_page& page = (*globalPages)[i];
-            MapPages(pml4, page.PhysicalAddr, page.VirtualAddr, page.Flags);
+            MapPages(pml4, p.PhysicalAddr, p.VirtualAddr, p.Flags);
         }
     }
 
@@ -119,13 +118,8 @@ void virtm::MapPages(uint64_t *pml4, paddr_t paddr,
 
 void virtm::AddGlobalPage(global_page page)
 {
-    if (globalPages == nullptr)
-    {
-        globalPages = new std::vector<global_page>(3);
-    }
-
     MapPages(nullptr, page.PhysicalAddr, page.VirtualAddr, page.Flags);
-    globalPages->push_back(page);
+    globalPages.push_back(page);
 }
 
 void virtm::UnmapPages(uint64_t *pml4, vaddr_t vaddr)
