@@ -94,6 +94,12 @@ struct pe_export_address_table
     uint32_t ForwarderRva;
 };
 
+struct pe_relocation_table : public pe_section
+{
+    uint32_t PageRva;
+    uint32_t BlockSize;
+};
+
 enum pe_section_flags : unsigned int
 {
     kPeSectionRead = 0x40000000,
@@ -123,10 +129,12 @@ public:
     void* GetSymbolAddress(std::string_view name);
     pe_section* GetSection(std::string_view section);
 private:
+    void FixRelocations();
 
     bool m_Loaded;
     void* m_AddressSpace;
     void* m_EntryPoint;
+    dos_header* m_Dos;
     pe_header* m_Header;
     pe_optional_header* m_OptHeader;
 };

@@ -1,4 +1,5 @@
 #include "atapi.h"
+#include "alloc/physical.h"
 #include "ata.h"
 #include "dllogic/api/dhelp.h"
 #include "ide.h"

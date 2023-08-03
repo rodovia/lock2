@@ -20,13 +20,7 @@
 #include "arch/i386/paging/paging.h"
 
 #include "requests.h"
-
-extern "C"
-{
-#include "acpica/acpi.h"
-#include "acpi/acpica/actypes.h"
-#include "acpica/acpiosxf.h"
-}
+#include "acpica.h"
 
 [[gnu::always_inline]]
 static inline void cli()

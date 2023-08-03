@@ -5,11 +5,10 @@
 
 #include <terminal.h>
 
-static inline constexpr uint16_t blockSignature = 0xFAFD;
-
 struct mem_global
 {
     struct mem_block* FreeList;
+    struct mem_aligned_block* FreeAlignedList;
     void* Head;
     uint64_t AllocatedSize;
     uint64_t Length;
@@ -19,6 +18,27 @@ struct __attribute__((packed)) mem_block
 {
     mem_block* Next;
     uint32_t BlockSize;
+};
+
+struct __attribute__((packed)) mem_aligned_block
+{
+    mem_aligned_block* Next;
+    uint16_t Alignment;
+    uint32_t BlockSize;
+
+    constexpr mem_aligned_block(uint32_t blockSize, 
+                                uint16_t alignment, 
+                                mem_aligned_block* next = nullptr)
+        : Next(next),
+          Alignment(alignment),
+          BlockSize(blockSize)
+    {}
+
+    constexpr mem_aligned_block()
+        : Next(nullptr),
+          Alignment(0),
+          BlockSize(0)
+    {}
 };
 
 static mem_global* global;
@@ -40,7 +60,8 @@ static void TraverseAppend(mem_block* head, mem_block* item)
     item->Next = nullptr;
 }
 
-static void TraverseAndRemove(mem_block** head, mem_block* item)
+template<class _Block>
+static void TraverseAndRemove(_Block** head, _Block* item)
 {
     if (head == NULL)
     {
@@ -53,8 +74,8 @@ static void TraverseAndRemove(mem_block** head, mem_block* item)
         return;
     }
 
-    mem_block* tmp = *head;
-    mem_block* oldtmp = nullptr;
+    _Block* tmp = *head;
+    _Block* oldtmp = nullptr;
     while(tmp != nullptr)
     {
         if (tmp == item)
@@ -132,23 +153,43 @@ void* pm::Alloc(size_t bytes)
     return LinklStratg(bytes);
 }
 
-void* pm::AlignedAlloc(size_t bytes, uint16_t aligned)
+void* pm::AlignedAlloc(size_t bytes, uint16_t alignment)
 {
-    if (bytes == 0 || aligned == 0)
+    if (bytes == 0 || alignment == 0)
     {
         return nullptr;
     }
 
-    global->AllocatedSize += bytes;
-    uint64_t head = reinterpret_cast<uint64_t>(global->Head);
-    if (head % aligned == 0)
+    if (global->FreeAlignedList != nullptr)
     {
-        global->Head = PaAdd(head, bytes);
+        mem_aligned_block* aligned = global->FreeAlignedList;
+        while (aligned->Next != nullptr)
+        {
+            if (aligned->BlockSize >= bytes && aligned->Alignment == alignment)
+            {
+                TraverseAndRemove(&global->FreeAlignedList, aligned);
+            }
+
+            aligned = aligned->Next;
+        }
+    }
+
+    mem_aligned_block al(bytes, alignment, nullptr);
+    uint64_t head = reinterpret_cast<uint64_t>(global->Head);
+
+    auto headptr = PaAdd(head, bytes);
+    int actSize = bytes + sizeof(mem_aligned_block);
+    global->AllocatedSize += bytes;
+    if (head % alignment == 0)
+    {
+        memcpy(headptr, &al, sizeof(al));
+        global->Head = PaAdd(head, actSize);
         return (void*)head;
     }
 
-    head += aligned - head % aligned;
-    global->Head = PaAdd(head, bytes);
+    head += alignment - head % alignment;
+    global->Head = PaAdd(head, actSize);
+    memcpy(headptr, &al, sizeof(al));
     return (void*)head;
 }
 
@@ -156,10 +197,9 @@ void pm::Free(void* block)
 {
     if (block == nullptr)
     {
-        Warn("Free: Cannot free null ptr\n");
+        Warn("Free: Cannot free null ptr");
     }
 
-    Warn("Free: block = %p", block);
     mem_block* tmp = global->FreeList;
     mem_block* blk = (mem_block*)(reinterpret_cast<uint8_t*>(block) - sizeof(mem_block));
     blk->Next = nullptr;
@@ -171,6 +211,28 @@ void pm::Free(void* block)
     }
     
     TraverseAppend(global->FreeList, blk);
+}
+
+void pm::AlignedFree(size_t size, void* bl)
+{
+    if (size == 0 || bl == nullptr)
+    {
+        return;
+    }
+
+    mem_aligned_block* block = reinterpret_cast<mem_aligned_block*>(PaAdd(bl, size));
+    mem_aligned_block* tmp = global->FreeAlignedList;
+    if (tmp == nullptr)
+    {
+        global->FreeAlignedList = block;
+        return;
+    }
+
+    while (tmp->Next != nullptr)
+    {
+        tmp = tmp->Next;
+    }
+    tmp->Next = block;
 }
 
 bool pm::WasAlloqued(void* ptr)

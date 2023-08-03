@@ -13,10 +13,6 @@ extern "C" void* memset(void* to, int value, size_t size);
 extern "C" void* memcpy(void* to, const void* from, size_t size);
 extern "C" void* memmove(void* to, const void* from, size_t size);
 
-extern "C" void* _memcpy16(uint16_t* to, const uint16_t* from, size_t size);
-extern "C" void* _memcpy32(uint32_t* to, const uint32_t* from, size_t size);
-extern "C" void* _memcpy64(uint64_t* to, const uint64_t* from, size_t size);
-
 namespace pm
 {
 
@@ -28,6 +24,7 @@ void* GetEnd();
 void* Alloc(size_t bytes);
 void* AlignedAlloc(size_t bytes, uint16_t aligned);
 void Free(void* block);
+void AlignedFree(size_t size, void* block);
 bool WasAlloqued(void* ptr);
 
 }

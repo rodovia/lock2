@@ -17,7 +17,7 @@
 static void hcf(void);
 static limine_memmap_entry* DetermineUsableEntry();
 
-extern "C" 
+extern "C"
 void KeStartThunk()
 {
     CTerminal::WriteFormatted("Hello, Lock2! %s %s\n", __DATE__, __TIME__);
@@ -32,7 +32,7 @@ void KeStartThunk()
     virtm::SetCr3((paddr_t)virtm::CreatePml4());
     acpi::ParseTables();
     driver::LoadDrivers();
-
+    
     Info("Finished execution!\n");
     auto& c = sched::CScheduler::GetInstance();
     c.Enable();

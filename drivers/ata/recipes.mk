@@ -16,7 +16,7 @@ ata_clean:
 	rm -rf $(ATA_BUILDBASE)
 
 $(ATA_OUTPUT): $(ATA_CXXBUILD)
-	$(DRIVER_LD) -shared $(ATA_CXXBUILD) -o $@ 
+	$(DRIVER_LD) -shared -o $(ATA_OUTPUT) $^
 
 $(ATA_BUILDBASE)/%.d: $(ATA_SOURCEBASE)/source/%.cpp
 	mkdir -p build/$(dir $(subst source/,,$^))	
@@ -25,4 +25,4 @@ $(ATA_BUILDBASE)/%.d: $(ATA_SOURCEBASE)/source/%.cpp
 
 $(ATA_BUILDBASE)/%.cpp.o: $(ATA_SOURCEBASE)/source/%.cpp $(ATA_BUILDBASE)/%.d
 	mkdir -p build/kernel/$(dir $(subst kernel/source/,,$<))
-	$(DRIVER_CXX) $(DRIVER_CXXFLAGS) -mcmodel=large -c $< -o $@
+	$(DRIVER_CXX) $(DRIVER_CXXFLAGS) -fpic -c $< -o $@

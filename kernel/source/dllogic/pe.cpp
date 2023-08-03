@@ -5,6 +5,7 @@
 #include <string_view>
 
 pe::CPortableExecutable::CPortableExecutable(pe::dos_header* header, int flags)
+    : m_Dos(header)
 {
     if (header == nullptr)
     {
@@ -60,7 +61,7 @@ void* pe::CPortableExecutable::GetSymbolAddress(std::string_view name)
 {
     if (name.empty() || !(m_Header->Characteristics & kPeCharsDll))
     {
-        Warn("Name empty or not a DLL, %p", name.empty());
+        Warn("Name empty or not a DLL");
         return nullptr;
     }
 
