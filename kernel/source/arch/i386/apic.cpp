@@ -160,16 +160,6 @@ uint32_t acpi::CApic::ReadLocal(uint32_t reg)
     return (*pad);
 }
 
-void acpi::CApic::LocalUnmaskAll()
-{
-    this->WriteLocal(0xF0, 0xFF | (1 << 8));
-}
-
-void acpi::CApic::LocalSetLvt(apic_local_vector_table lv, uint8_t vector)
-{
-    this->WriteLocal(lv, vector);
-}
-
 acpi::CApicTimer*
 acpi::CApic::LocalGetTimer()
 {
@@ -202,7 +192,7 @@ acpi::CApic::GetInterruptOverride(int irq)
     return iter + 0;
 }
 
-void acpi::EndOfInterrupt()
+void acpi::local::EndOfInterrupt()
 {
     if (_localApicAddress == nullptr)
     {
@@ -213,7 +203,7 @@ void acpi::EndOfInterrupt()
     _localApicAddress[LAPIC_REG(0xB0)] = 0;
 }
 
-acpi::cpuid_t acpi::GetCurrentCpuId()
+acpi::cpuid_t acpi::local::GetCurrentCpuId()
 {
     if (_localApicAddress == nullptr)
     {
@@ -225,12 +215,23 @@ acpi::cpuid_t acpi::GetCurrentCpuId()
     return _localApicAddress[LAPIC_REG(0x20)] >> 24;
 }
 
-void acpi::WriteLocal(uint32_t reg, uint32_t value)
+void acpi::local::WriteLocal(uint32_t reg, uint32_t value)
 {
     _localApicAddress[LAPIC_REG(reg)] = value;
 }
 
-uint32_t acpi::ReadLocal(uint32_t reg)
+uint32_t acpi::local::ReadLocal(uint32_t reg)
 {
     return _localApicAddress[LAPIC_REG(reg)];
+}
+
+void acpi::local::SetLocalVectorTableInt(acpi::apic_local_vector_table lv,
+                                         uint8_t vector)
+{
+    WriteLocal(lv, vector);   
+}
+
+void acpi::local::UnmaskAllInterrupts()
+{
+    WriteLocal(0xF0, 0xFF | (1 << 8));
 }

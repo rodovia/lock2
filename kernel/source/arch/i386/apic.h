@@ -82,9 +82,6 @@ public:
     ~CApic();
 
     CApicTimer* LocalGetTimer();
-    void LocalGetId();
-    void LocalUnmaskAll();
-    void LocalSetLvt(apic_local_vector_table lv, uint8_t vector);
 
     uint8_t IoGetMaximumRedirectionEntries();
     io_apic_redir_entry IoGetRedirectionEntry(uint8_t idx);
@@ -109,9 +106,18 @@ private:
     bool m_OverrideLocalApic;
 };
 
+namespace local
+{
+
 uint32_t ReadLocal(uint32_t reg);
 void WriteLocal(uint32_t reg, uint32_t value);
+
 void EndOfInterrupt();
+void UnmaskAllInterrupts();
+void SetLocalVectorTableInt(apic_local_vector_table lv, uint8_t vector);
 cpuid_t GetCurrentCpuId();
+
+}
+
 
 }
