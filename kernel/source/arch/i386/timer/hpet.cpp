@@ -76,8 +76,8 @@ void acpi::AssociateHpetInterrupt()
 
     CApic apic;
     auto intr = apic.IoGetRedirectionEntry(finalInt);
-    intr.Vector = 35;
-    intr.Destination = acpi::GetCurrentCpuId();
+    intr.Vector = 33;
+    intr.Destination = acpi::local::GetCurrentCpuId();
     apic.IoSetRedirectionEntry(finalInt, intr);
 }
 

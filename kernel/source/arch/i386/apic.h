@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <vector>
 #include "acpi/tables.h"
+#include "dllogic/api/dhelp.h"
 
 #define IOREDTBL_VECTOR 0xFF
 #define IOREDTBL_DELIVERY_MODE  0x700 /* bits 8-10 */
@@ -73,15 +74,14 @@ struct io_apic_redir_entry
 
 class CApicTimer;
 
+/* TODO: Refactor this class even more 
+    (remove Io prefix of functions, remove the remnances of lapic etc) */
 class CApic
 {
     friend class CApicTimer;
 public:
     CApic(acpi::madt_header* header);
     CApic();
-    ~CApic();
-
-    CApicTimer* LocalGetTimer();
 
     uint8_t IoGetMaximumRedirectionEntries();
     io_apic_redir_entry IoGetRedirectionEntry(uint8_t idx);
@@ -98,12 +98,41 @@ private:
 
 private:
     std::vector<acpi::madt_entry_io_apic_int_source_override> m_IntSrcOverrides;
-
-    CApicTimer* m_Timer = nullptr;
     volatile uint32_t* m_IoApicAddress;
     volatile uint32_t* m_LapicAddress;
     uint32_t m_GlobalSystemBase;
     bool m_OverrideLocalApic;
+};
+
+struct apic_interrupt_handler
+{
+    int Vector;
+    driver_interrupt_handler Handler;
+};
+
+/* A class that meets the requirements of InterruptController
+   through Advanced PIC. */
+class CApicController : public IDHelpInterruptController
+{
+public:
+    int GenerateVector() override;
+    void RemoveVector(int vector) override;
+    void HandleInterrupt(int vector, driver_interrupt_handler handler) override;
+    void AssociateVector(int pvector, int vvector) override; 
+    static void TriggerInterrupt(int vector);
+
+    static CApicController& GetInstance()
+    {
+        static CApicController s;
+        return s;
+    }
+
+private:
+    CApicController();
+
+    std::vector<int> m_FreedList;
+    std::vector<apic_interrupt_handler> m_Interrupts;
+    int m_InterruptBase;
 };
 
 namespace local

@@ -45,14 +45,6 @@ acpi::CApic::CApic()
 {
 }
 
-acpi::CApic::~CApic()
-{
-    if (m_Timer != nullptr)
-    {
-        delete m_Timer;
-    }
-}
-
 void acpi::CApic::ParseMadtVariableTable(acpi::madt_header* madt)
 {
     uint8_t* entries = (uint8_t*)PaAdd(madt, sizeof(acpi::madt_header));
@@ -160,17 +152,6 @@ uint32_t acpi::CApic::ReadLocal(uint32_t reg)
     return (*pad);
 }
 
-acpi::CApicTimer*
-acpi::CApic::LocalGetTimer()
-{
-    if (m_Timer == nullptr)
-    {
-        m_Timer = new CApicTimer(this);
-    }
-    
-    return m_Timer;
-}
-
 uint64_t acpi::CApic::GetGlobalSystemBase() const
 {
     return m_GlobalSystemBase;
@@ -190,6 +171,79 @@ acpi::CApic::GetInterruptOverride(int irq)
     }
 
     return iter + 0;
+}
+
+acpi::CApicController::CApicController()
+    : m_InterruptBase(35)
+{
+}
+
+int acpi::CApicController::GenerateVector()
+{
+    if (m_FreedList.empty())
+    {
+        uint32_t oldint = m_InterruptBase;
+        m_InterruptBase++;
+        return oldint;
+    }
+
+    auto back = m_FreedList.back();
+    m_FreedList.pop_back();
+    return back;
+}
+
+void acpi::CApicController::RemoveVector(int vector)
+{
+    m_FreedList.push_back(vector);
+}
+
+void acpi::CApicController::HandleInterrupt(int vector, driver_interrupt_handler handler)
+{
+    for (auto& i : m_Interrupts)
+    {
+        if (i.Vector == vector)
+        {
+            Warn("Double reference to interrupt vector %i. "
+                 "The effect of sharing an interrupt is undefined", vector);
+        }
+    }
+
+    Warn("m_Interrupts=%p", m_Interrupts.data());
+    m_Interrupts.push_back({ vector, handler });
+}
+
+void acpi::CApicController::TriggerInterrupt(int vector)
+{
+    auto thiz = GetInstance();
+    auto pred = [&](apic_interrupt_handler& h)
+        {
+            return h.Vector == vector;
+        };
+    auto iter = std::find_if(thiz.m_Interrupts.begin(), thiz.m_Interrupts.end(), pred);
+    if (iter == thiz.m_Interrupts.end())
+    {
+        return;
+    }
+    
+    auto deref = *iter;
+    if (deref.Handler == nullptr)
+    {
+        return;
+    }
+
+    deref.Handler();
+}
+
+void acpi::CApicController::AssociateVector(int pvector, int vvector)
+{
+    Warn("AssociateVector: %i to %i", pvector, vvector);
+    CApic io;
+    auto redir = io.IoGetRedirectionEntry(pvector);
+    redir.Vector = vvector;
+    redir.Destination = acpi::local::GetCurrentCpuId();
+    io.IoSetRedirectionEntry(pvector, redir);
+    BochsDebugBreak;
+    Warn("END OF AssociateVector: %i to %i", pvector, vvector);
 }
 
 void acpi::local::EndOfInterrupt()

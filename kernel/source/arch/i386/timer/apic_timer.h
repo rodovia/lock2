@@ -29,7 +29,7 @@ enum apic_timer_mode : unsigned short
 class CApicTimer
 {
 public:
-    CApicTimer(CApic* apic);
+    CApicTimer() = default;
     void Configure(apic_timer_mode mode);
     void SetInitialCount(uint32_t count);
 private:

@@ -69,8 +69,7 @@ void acpi::ParseTables()
     AcpiInitializeObjects(ACPI_FULL_INITIALIZATION);
 
     CApic apic(madt);
-    apic.LocalUnmaskAll();
-    CApicTimer* tmr = apic.LocalGetTimer();
-    tmr->Configure(kTimerModePeriodic);
-    tmr->SetInitialCount(10000);
+    acpi::local::UnmaskAllInterrupts();
+    CApicTimer tmr;
+    tmr.Configure(kTimerModePeriodic);
 }
