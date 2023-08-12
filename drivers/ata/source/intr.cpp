@@ -43,7 +43,6 @@ uint8_t dhelp::RequestForInterrupt(IDHelpPciDevice* devc, int vector)
         cap = (rd >> 8) & 0xFC;
     }
 
-    BochsDebugBreak;
     rd |= (1 << 16); /* Enable MSI */
     devc->WriteConfigurationSpace(cap, rd);
     msiaddress = GetMsiAddress(msidat, vector, 0, false, false);

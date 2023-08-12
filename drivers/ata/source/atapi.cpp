@@ -15,6 +15,8 @@ void AtapiReadCdRom(uint32_t lba,
                     uint16_t* buffer,
                     uint16_t maxByteCount);
 
+static void DriverAtaInterrupt() __system;
+
 __system extern "C" 
 void Driver_Init(IDHelpDriverManager* mgr)
 {
@@ -22,12 +24,18 @@ void Driver_Init(IDHelpDriverManager* mgr)
     IDHelpTerminal* term;
     IDHelpPci* pci;
     IDHelpPciDevice* devcs;
+    IDHelpInterruptController* ic;
     mgr->GetTerminal(&term);
-    mgr->GetPci(&pci);    
+    mgr->GetPci(&pci);
+    mgr->GetInterruptController(&ic);
     pci->FindDeviceByClass(0x1, 0x1, &devcs);
 
-    ide::CreateController(devcs);
+    auto vector = ic->GenerateVector();
+    ic->AssociateVector(15, vector);
+    ic->AssociateVector(14, vector);
+    ic->HandleInterrupt(vector, DriverAtaInterrupt);
 
+    ide::CreateController(devcs);
     ata_check_result ch = AtaCheck(); 
     if (ch == kAtaChkNoDrive)
     {
@@ -35,7 +43,6 @@ void Driver_Init(IDHelpDriverManager* mgr)
     }
     
     AtapiReadCdRom(0, 2, nullptr, 50);
-
     mgr->SetNotify(Driver_Notify);
     mgr->SetRole(kDHelpDriverRoleDisk);
 }
@@ -134,4 +141,9 @@ void AtapiReadCdRom(uint32_t lba,
     {
         (*dma) = command16[i];
     }
+}
+
+static void DriverAtaInterrupt()
+{
+
 }

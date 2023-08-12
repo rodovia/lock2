@@ -1,6 +1,8 @@
 #include "acpi/tables.h"
+#include "alloc/physical.h"
 #include "dhelp_internal.h"
 
+#include "arch/i386/apic.h"
 #include "dllogic/api/dhelp.h"
 #include "dllogic/load.h"
 #include "dllogic/pe.h"
@@ -13,9 +15,10 @@ public:
     CDriverManager(pe::CPortableExecutable exec);
     ~CDriverManager() override {}
 
-    virtual int CreateMachineLanguageParser(IDHelpMachineLanguageRegistry** sx) override;
     virtual int GetPci(IDHelpPci** pci) override;
     virtual int GetTerminal(IDHelpTerminal** term) override;
+    virtual int GetInterruptController(IDHelpInterruptController** ic) override;
+    virtual int GetAllocator(IDHelpMemoryAllocator** al) override;
     virtual void FreeInterface(void* ref) override;
 
     virtual void SetRole(driver_role role) noexcept override;
@@ -25,6 +28,24 @@ private:
     pe::CPortableExecutable m_Executable;
     driver_role m_Role;
     driver_notify m_DriverNotify;
+};
+
+class CMemoryAllocator : public IDHelpMemoryAllocator
+{
+public:
+    static CMemoryAllocator& GetInstance()
+    {
+        static CMemoryAllocator c;
+        return c;
+    }
+
+    void* Allocate(size_t bytes) override;
+    void Free(void* block) override;
+    void* AlignedAlloc(size_t bytes, uint16_t alignment) override;
+    void AlignedFree(void* block, size_t bytes) override;
+
+private:
+    CMemoryAllocator() = default;
 };
 
 CDriverManager::CDriverManager(pe::CPortableExecutable exec)
@@ -63,17 +84,6 @@ void CDriverManager::SetRole(driver_role role) noexcept
     m_Role = role;
 }
 
-int CDriverManager::CreateMachineLanguageParser(IDHelpMachineLanguageRegistry** sx)
-{
-    if (sx == nullptr)
-    {
-        return kDHelpResultInvalidArgument;
-    }
-
-    auto aml = nullptr;
-    return kDHelpResultOk;
-}
-
 int CDriverManager::GetTerminal(IDHelpTerminal** term)
 {  
     auto tem = &CTerminal::GetInstance();
@@ -98,13 +108,52 @@ int CDriverManager::GetPci(IDHelpPci **pci)
     return kDHelpResultOk;
 }
 
+int CDriverManager::GetAllocator(IDHelpMemoryAllocator **al)
+{
+    auto mal = &CMemoryAllocator::GetInstance();
+    if (al == nullptr)
+    {
+        return kDHelpResultInvalidArgument;
+    }
+
+    (*al) = mal;
+    return kDHelpResultOk;
+}
+
 void CDriverManager::FreeInterface(void* ref)
 {
     delete (uint8_t*)ref;
+}
+
+int CDriverManager::GetInterruptController(IDHelpInterruptController **ic)
+{
+    (*ic) = &acpi::CApicController::GetInstance();
+    return kDHelpResultOk;
 }
 
 IDHelpDriverManager* 
 driver::CreateManagerFor(pe::CPortableExecutable exec)
 {
     return new CDriverManager(exec);
+}
+
+/* CMemoryAllocator */
+void* CMemoryAllocator::AlignedAlloc(size_t bytes, uint16_t alignment)
+{
+    return pm::AlignedAlloc(bytes, alignment);
+}
+
+void CMemoryAllocator::AlignedFree(void *block, size_t bytes)
+{
+    pm::AlignedFree(bytes, block);
+}
+
+void* CMemoryAllocator::Allocate(size_t bytes)
+{
+    return pm::Alloc(bytes);
+}
+
+void CMemoryAllocator::Free(void *block)
+{
+    pm::Free(block);
 }
