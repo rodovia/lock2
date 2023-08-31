@@ -12,7 +12,7 @@ class IDHelpMachineLanguageObject;
 class IDHelpMachineLanguageRegistry;
 
 typedef uint64_t(*driver_notify)(uint32_t, uint64_t, uint64_t, uint64_t) __system;
-typedef void(*driver_interrupt_handler)() __system;
+typedef void(*driver_interrupt_handler)(void* context) __system;
 
 enum driver_role
 {
@@ -27,12 +27,6 @@ enum driver_result
     kDHelpResultInvalidArgument
 };
 
-enum DH_MACHINE_LANGUAGE_OBJECT_TYPE : unsigned int
-{
-    kDhMachineLanguageObjTypePackage,
-    kDhMachineLanguageObjTypeMethod,
-    kDhMachineLanguageObjTypeDevice
-};
 
 class IDHelpTerminal
 {
@@ -43,13 +37,13 @@ public:
     virtual void WriteFormat(const char* string, ...) __system __pure;
 };
 
-class IDHelpMachineLanguageRegistry
+class IDHelpThreadScheduler
 {
 public:
-    virtual ~IDHelpMachineLanguageRegistry() __system {};
+    virtual ~IDHelpThreadScheduler() __system {}
 
-    virtual IDHelpMachineLanguageObject* FindObjectByName(const char*) const __system __pure;
-    virtual IDHelpMachineLanguageObject* FindObjectByPnpId(const char*) const __system __pure; 
+    virtual void HaltExecution(int ms) __system __pure;
+    /* TODO: add CreateThread etc */
 };
 
 class IDHelpPciDevice
@@ -87,6 +81,7 @@ public:
     virtual int GetTerminal(IDHelpTerminal** term) __system __pure;
     virtual int GetInterruptController(class IDHelpInterruptController** ic) __system __pure;
     virtual int GetAllocator(class IDHelpMemoryAllocator** al) __system __pure;
+    virtual int GetThreadManager(class IDHelpThreadScheduler** thr) __system __pure;
     virtual void FreeInterface(void* ref) __system __pure;
 
     virtual void SetRole(driver_role role) noexcept __system __pure;
@@ -99,7 +94,7 @@ public:
     virtual ~IDHelpInterruptController() __system { };
     virtual int GenerateVector() __system __pure;
     virtual void RemoveVector(int vector) __system __pure;
-    virtual void HandleInterrupt(int vector, driver_interrupt_handler handler) __system __pure;
+    virtual void HandleInterrupt(int vector, driver_interrupt_handler handler, void* context) __system __pure;
     virtual void AssociateVector(int pvector, int vvector) __system __pure;
 };
 

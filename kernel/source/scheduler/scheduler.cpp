@@ -144,7 +144,5 @@ void sched::CScheduler::ThinkSuspendedThreads()
 
 void sched::CScheduler::YieldThreadTime()
 {
-    Warn("m_Quantum = %i", m_Quantum);
     m_Quantum = 0;
-    Warn("m_Quantum = %i", m_Quantum);
 }

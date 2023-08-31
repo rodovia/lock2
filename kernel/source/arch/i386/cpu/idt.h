@@ -63,7 +63,8 @@ public:
     void AddRoutine(unsigned char vector, void* routine);
     void Encode();
 
-    template<class _Ty> _Ty* GetRoutine(unsigned char num)
+    template<class _Ty> 
+    constexpr _Ty* GetRoutine(unsigned char num)
     {
         return reinterpret_cast<_Ty*>(m_Routines[num]);
     }

@@ -123,6 +123,7 @@ void CTerminal::WriteChar(char c)
 
 void CTerminal::WriteString(const char *st, size_t length)
 {
+    asm volatile("cli");
     int finalw = ssfn_dst.w - ssfn_src->width;
     for (size_t i = 0; i < length; i++)
     {
@@ -168,6 +169,7 @@ void CTerminal::WriteString(const char *st, size_t length)
         
         ssfn_putc(c);
     }
+    asm volatile("sti");
 }
 
 bool CTerminal::ThinkEscape(char c)
@@ -352,6 +354,7 @@ void CTerminal::WriteFormatted(const char* st, va_list args)
 
         term.m_FormatState = kTerminalFmtStateNormal;
     }
+
 }
 
 void CTerminal::WriteFormat(const char *st, ...)

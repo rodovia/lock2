@@ -9,9 +9,10 @@ LD=ld.lld
 ASFLAGS=-g -F dwarf -f elf64
 CFLAGS=-g -mgeneral-regs-only -c -ffreestanding -fno-stack-protector -nostdlib \
 	-fno-stack-check -fno-lto -fno-stack-protector -m64 \
-	-march=x86-64 -mabi=sysv -mno-80387 -mno-red-zone
-CXXFLAGS=$(CFLAGS) -std=c++17 -pipe -Wall -Wextra \
-	-fno-exceptions -fno-rtti  -fno-threadsafe-statics -Weffc++
+	-march=x86-64 -mabi=sysv -mno-80387 -mno-red-zone -Wno-unused-command-line-argument \
+	-Wall -Wextra
+CXXFLAGS=$(CFLAGS) -std=c++17 -pipe \
+	-fno-exceptions -fno-rtti  -fno-threadsafe-statics
 
 ifeq ($(CXX),g++)
 # GCC warning about this inside limine.h.
@@ -19,7 +20,7 @@ ifeq ($(CXX),g++)
 CXXFLAGS+=-Wno-missing-field-initializers
 endif
 ifeq ($(CXX),clang++)
-CXXFLAGS+=-Wno-deprecated-register
+CXXFLAGS+=-Wno-deprecated-register --rtlib=compiler-rt
 endif
 
 MODULES=kernel drivers kernel/source/acpi/acpica

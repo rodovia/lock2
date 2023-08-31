@@ -1,10 +1,14 @@
 global SegmsReload
 SegmsReload:
-    push rdi
-    lea rax, [rel .ReloadCs]
+    mov rax, rsp
+    push rsi
     push rax
-    retfq
-.ReloadCs:
+    pushf
+    push rdi
+    push _ReloadCs
+    iretq
+
+_ReloadCs:
     mov ds, si
     mov ss, si
     mov es, si

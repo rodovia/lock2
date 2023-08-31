@@ -23,7 +23,6 @@ SchSwitchTaskKernel:
     mov rcx, [rbp+80]
     mov rbx, [rbp+88]
     mov rax, [rbp+96]
-    push _ThreadFinish
     push qword [rbp-40]
     mov rbp, [rbp+104]
     sti

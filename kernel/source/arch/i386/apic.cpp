@@ -197,7 +197,8 @@ void acpi::CApicController::RemoveVector(int vector)
     m_FreedList.push_back(vector);
 }
 
-void acpi::CApicController::HandleInterrupt(int vector, driver_interrupt_handler handler)
+void acpi::CApicController::HandleInterrupt(int vector, driver_interrupt_handler handler, 
+                                            void* context)
 {
     for (auto& i : m_Interrupts)
     {
@@ -208,13 +209,12 @@ void acpi::CApicController::HandleInterrupt(int vector, driver_interrupt_handler
         }
     }
 
-    Warn("m_Interrupts=%p", m_Interrupts.data());
-    m_Interrupts.push_back({ vector, handler });
+    m_Interrupts.push_back({ vector, handler, context });
 }
 
 void acpi::CApicController::TriggerInterrupt(int vector)
 {
-    auto thiz = GetInstance();
+    auto& thiz = GetInstance();
     auto pred = [&](apic_interrupt_handler& h)
         {
             return h.Vector == vector;
@@ -231,19 +231,16 @@ void acpi::CApicController::TriggerInterrupt(int vector)
         return;
     }
 
-    deref.Handler();
+    deref.Handler(deref.Context);
 }
 
 void acpi::CApicController::AssociateVector(int pvector, int vvector)
 {
-    Warn("AssociateVector: %i to %i", pvector, vvector);
     CApic io;
     auto redir = io.IoGetRedirectionEntry(pvector);
     redir.Vector = vvector;
     redir.Destination = acpi::local::GetCurrentCpuId();
     io.IoSetRedirectionEntry(pvector, redir);
-    BochsDebugBreak;
-    Warn("END OF AssociateVector: %i to %i", pvector, vvector);
 }
 
 void acpi::local::EndOfInterrupt()

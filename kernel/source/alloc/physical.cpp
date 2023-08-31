@@ -1,5 +1,4 @@
 #include "physical.h"
-#include "arch/i386/debug/stackframe.h"
 #include <stddef.h>
 #include <stdint.h>
 
@@ -53,6 +52,7 @@ static void TraverseAppend(mem_block* head, mem_block* item)
     mem_block* tmp = head;
     while(tmp->Next != nullptr)
     {
+        Warn("tmp = %p, tmp->Next=%p", tmp, tmp->Next);
         tmp = tmp->Next;
     }
 
@@ -165,7 +165,8 @@ void* pm::AlignedAlloc(size_t bytes, uint16_t alignment)
         mem_aligned_block* aligned = global->FreeAlignedList;
         while (aligned->Next != nullptr)
         {
-            if (aligned->BlockSize >= bytes && aligned->Alignment == alignment)
+            if (aligned->BlockSize >= bytes && 
+                aligned->Alignment == alignment)
             {
                 TraverseAndRemove(&global->FreeAlignedList, aligned);
             }
@@ -198,6 +199,7 @@ void pm::Free(void* block)
     if (block == nullptr)
     {
         Warn("Free: Cannot free null ptr");
+        return;
     }
 
     mem_block* tmp = global->FreeList;
@@ -254,6 +256,7 @@ void* pm::GetBegin()
 
 void* pm::GetEnd()
 {
+    Warn("global head = %p, size=%i, total size %i", global->Head, global->AllocatedSize, global->Length);
     return PaAdd(pm::GetBegin(), global->Length);
 }
 

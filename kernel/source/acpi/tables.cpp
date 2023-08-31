@@ -1,5 +1,4 @@
 #include "tables.h"
-
 #include "acpica.h"
 
 #include "klibc/string.h"

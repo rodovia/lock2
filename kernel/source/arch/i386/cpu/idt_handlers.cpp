@@ -1,4 +1,5 @@
 #include "alloc/physical.h"
+#include "arch/i386/apic.h"
 #include "arch/i386/debug/stackframe.h"
 #include "arch/i386/paging/paging.h"
 #include "klibc/stdlib.h"
@@ -101,6 +102,7 @@ static void Interrupt12(interrupt_frame* frame)
 
 static void Interrupt13(interrupt_frame* frame, int error, register_state* state)
 {
+    BochsDebugBreak;
     _abortwrite("General protection fault; selector=%i\n", error);
     DumpFrame(frame);
     HLT;
@@ -232,8 +234,9 @@ static void Interrupt32(interrupt_frame* frame, register_state* state)
 }
 
 /* HPET timer */
-static void Interrupt35(interrupt_frame* frame, register_state* state)
+static void Interrupt33(interrupt_frame* frame, register_state* state)
 {
+    BochsDebugBreak;
     _hpetSleepFlag = false;
 }
 
@@ -248,5 +251,5 @@ void* rotTable[] = {
     _(Interrupt20), _(Interrupt21), _(Interrupt22), _(Interrupt23),
     _(Interrupt24), _(Interrupt25), _(Interrupt26), _(Interrupt27),
     _(Interrupt28), _(Interrupt29), _(Interrupt30), _(Interrupt31),
-    _(Interrupt32), nullptr, nullptr, _(Interrupt35)
+    _(Interrupt32), _(Interrupt33), nullptr
 };

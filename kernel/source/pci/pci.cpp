@@ -1,4 +1,9 @@
 #include "pci.h"
+#include "acpi/acpica.h"
+#include "acpi/acpica/aclocal.h"
+#include "acpi/acpica/acpixf.h"
+#include "acpi/acpica/acrestyp.h"
+#include "acpi/acpica/actypes.h"
 #include "arch/i386/port.h"
 #include "dllogic/api/dhelp.h"
 #include "internals/iterator.h"
@@ -179,3 +184,37 @@ uint8_t pci::pci_device::GetSecondaryBus() const
     uint32_t number = this->ReadConfigurationSpace(0x18);
     return number >> 7;
 }
+
+/*^^^^^ CPci and pci_device ^^^^^*/
+
+static unsigned int WalkDeviceTree(ACPI_HANDLE object, 
+                                   UINT32, 
+                                   void*, ACPI_HANDLE* ret)
+{
+    /* Already matches what we want: A PCI root bus */
+    (*ret) = object;
+
+    /* AE_TERMINATE is not defined :( */
+    return AE_TIME;
+}
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwritable-strings"
+
+void pci::RouteAcpiInterrupt(uint16_t device)
+{
+    uint32_t count = 0;
+    ACPI_HANDLE devc;
+    ACPI_BUFFER output = { .Length = ACPI_ALLOCATE_BUFFER, .Pointer = nullptr };
+    auto routing = reinterpret_cast<ACPI_PCI_ROUTING_TABLE*>(output.Pointer);
+
+    AcpiGetDevices("PNP0A03", WalkDeviceTree, &count, &devc);
+    AcpiGetIrqRoutingTable(devc, &output);
+    while (routing->Length != 0)
+    {
+        
+        routing++;
+    }
+}
+
+#pragma GCC diagnostic pop

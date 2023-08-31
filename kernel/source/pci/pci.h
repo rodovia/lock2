@@ -1,6 +1,7 @@
 #pragma once
 
 #include "dllogic/api/dhelp.h"
+#include "alloc/physical.h"
 #include <stdint.h>
 #include <vector>
 
@@ -29,10 +30,6 @@ struct pci_device : public IDHelpPciDevice
                Function != 0xFF;
     }
 
-    ~pci_device() override
-    {
-    }
-
     uint16_t GetVendor() const override;
     uint8_t GetHeaderType() const;
     uint8_t GetDevice() const override;
@@ -58,15 +55,15 @@ public:
     void FindDeviceExact(uint8_t bus, uint8_t device, IDHelpPciDevice** dev) override;
     void FindDeviceByClass(uint8_t klass, uint8_t subclass, IDHelpPciDevice** outDevices) override;
 private:
-    CPci()
-    {
-        this->DiscoverDevices();
-    }; 
+    inline CPci() { this->DiscoverDevices(); }
+
     void DiscoverBus(uint8_t bus);
     void DiscoverDevice(uint8_t bus, uint8_t device);
     void DiscoverFunction(uint8_t bus, uint8_t device, uint8_t function);
 
     std::vector<pci_device> m_Devices;
 };
+
+void RouteAcpiInterrupt(uint16_t device);
 
 }

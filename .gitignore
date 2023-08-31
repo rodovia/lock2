@@ -7,3 +7,6 @@ iso/
 .cache
 limine/
 compile_commands.json
+*.o
+*.o.tmp
+.vscode/

@@ -1,6 +1,9 @@
 #pragma once
 
+#include "alloc/physical.h"
+#include "arch/i386/paging/paging.h"
 #include <stdint.h>
+#include <vector>
 #include <string>
 
 #define DOS_MAGIC 0x5A4D /* MZ */
@@ -8,6 +11,19 @@
 
 namespace pe
 {
+
+struct allocated_page
+{
+    uint64_t PhysicalAddress;
+    uint64_t VirtualAddress;
+    size_t Size;
+
+    ~allocated_page()
+    {
+        virtm::UnmapPages(nullptr, VirtualAddress);
+        pm::AlignedFree(Size, (void*)PhysicalAddress);
+    }
+};
 
 struct dos_header
 {
@@ -114,7 +130,8 @@ enum pe_image_characteristics : unsigned short
 
 enum pe_load_flags
 {
-    kPeLoadFlagsCurrentAddressSpace = 0x1, /* Do not create a new PML4 to this executable, */
+    kPeLoadFlagsCurrentAddressSpace = 0x1, /* Do not create a new PML4 to this executable.
+                                              Only valid if executable is a DLL */
     kPeLoadFlagsPageInsideKernelMode,      /* Do not insert the executable inside user pages */
 };
 
@@ -137,6 +154,7 @@ private:
     dos_header* m_Dos;
     pe_header* m_Header;
     pe_optional_header* m_OptHeader;
+    std::vector<allocated_page> m_Pages;
 };
 
 }

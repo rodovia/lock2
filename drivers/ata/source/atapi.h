@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stddef.h>
 #include <stdint.h>
 
 __attribute__((sysv_abi)) extern "C" uint64_t Driver_Notify(uint32_t message,

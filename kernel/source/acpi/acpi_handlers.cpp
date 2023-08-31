@@ -139,7 +139,7 @@ ACPI_STATUS
 AcpiOsExecute(ACPI_EXECUTE_TYPE, ACPI_OSD_EXEC_CALLBACK Function, void *Context)
 {
     auto thr = new sched::CThread(Function, Context, sched::kThreadKernelMode);
-    auto sch = sched::CScheduler::GetInstance();
+    auto& sch = sched::CScheduler::GetInstance();
     sch.AddThread(thr);
     return AE_OK;
 }

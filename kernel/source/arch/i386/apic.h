@@ -108,6 +108,7 @@ struct apic_interrupt_handler
 {
     int Vector;
     driver_interrupt_handler Handler;
+    void* Context;
 };
 
 /* A class that meets the requirements of InterruptController
@@ -117,7 +118,7 @@ class CApicController : public IDHelpInterruptController
 public:
     int GenerateVector() override;
     void RemoveVector(int vector) override;
-    void HandleInterrupt(int vector, driver_interrupt_handler handler) override;
+    void HandleInterrupt(int vector, driver_interrupt_handler handler, void* context) override;
     void AssociateVector(int pvector, int vvector) override; 
     static void TriggerInterrupt(int vector);
 

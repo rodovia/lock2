@@ -2,13 +2,17 @@ Building Lock2: Tutorial
 ========================
 Windows users: You'll have to install an UNIX-compatible environment on your computer, such as WSL2, MSYS2 or Cygwin.
 
-First of all, install the following tools. The name of their packages may vary between distributions or operating systems.
+Install the following tools. The name of their packages may vary between distributions or operating systems.
 
         * `xorriso`
 
         * `nasm`
 
-        * `clang` and `lld` (or `gcc` with `ld`)
+        * `clang` and `lld`
+
+You can use GCC if you'd like.
+
+**Note**: If you are going to debug Lock2 with GDB, be sure to use at least NASM 2.16, or else `error: pc <address> in address map, but not in symtab.` will pop up A LOT when inspecting the stack frame.
 
 
 Make sure you've done a recursive clone of Lock2 to ensure all the submodules were correctly fetched.

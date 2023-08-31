@@ -1,3 +1,4 @@
+#include "alloc/physical.h"
 #include "arch/i386/debug/stackframe.h"
 #include "stdlib.h"
 #include "terminal.h"

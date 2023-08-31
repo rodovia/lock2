@@ -27,11 +27,9 @@ uint8_t dhelp::RequestForInterrupt(IDHelpPciDevice* devc, int vector)
 
     HasCapabilityList(devc);
     uint32_t rd;
-    uint16_t ctl;
     uint16_t msidat;
     uint64_t msiaddress;
     uint8_t cap = devc->ReadConfigurationSpace(0x34) & 0xFC;
-    t->WriteFormat("cap=%p\n", cap);
     while (cap != 0)
     {
         rd = devc->ReadConfigurationSpace(cap);

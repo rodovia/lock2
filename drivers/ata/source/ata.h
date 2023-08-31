@@ -32,7 +32,6 @@ enum ata_check_result
 {
     kAtaChkNoDrive,
     kAtaChkAtapiDrive,
-    kAtaChkSataDrive,
-    kAtaChkPataDrive
+    kAtaChkAtaDrive
 };
 

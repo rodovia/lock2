@@ -3,11 +3,15 @@
 #include "dhelp_internal.h"
 
 #include "arch/i386/apic.h"
+#include "arch/i386/timer/hpet.h"
 #include "dllogic/api/dhelp.h"
 #include "dllogic/load.h"
 #include "dllogic/pe.h"
 #include "pci/pci.h"
 #include "terminal.h"
+
+namespace 
+{
 
 class CDriverManager : public IDHelpDriverManager
 {
@@ -19,6 +23,7 @@ public:
     virtual int GetTerminal(IDHelpTerminal** term) override;
     virtual int GetInterruptController(IDHelpInterruptController** ic) override;
     virtual int GetAllocator(IDHelpMemoryAllocator** al) override;
+    virtual int GetThreadManager(IDHelpThreadScheduler**) override;
     virtual void FreeInterface(void* ref) override;
 
     virtual void SetRole(driver_role role) noexcept override;
@@ -48,19 +53,41 @@ private:
     CMemoryAllocator() = default;
 };
 
+/* TODO: Refactor this to avoid out of line definitions */
+
+class CThreadManager : public IDHelpThreadScheduler
+{
+public:
+    static CThreadManager& GetInstance()
+    {
+        static CThreadManager m;
+        return m;
+    }
+
+    void HaltExecution(int ms) override
+    {
+        acpi::PrepareHpetDelay(ms * 1000);
+    }
+
+private:
+    CThreadManager() = default;
+};
+
+}
+
 CDriverManager::CDriverManager(pe::CPortableExecutable exec)
     : m_Executable(exec),
       m_Role(kDHelpDriverRoleUninit),
       m_DriverNotify(nullptr)
 {
-    auto notf = reinterpret_cast<driver::driver_init>(m_Executable.GetSymbolAddress("Driver_Init"));
-    if (notf == nullptr)
+    auto main = reinterpret_cast<driver::driver_init>(m_Executable.GetSymbolAddress("Driver_Init"));
+    if (main == nullptr)
     {
         Warn("Driver has no entry point, unloading!\n");
         return;
     }
 
-    notf(this);
+    main(this);
     if (m_Role == kDHelpDriverRoleUninit)
     {
         Warn("Driver did not advertise its role, unloading!\n");
@@ -128,6 +155,18 @@ void CDriverManager::FreeInterface(void* ref)
 int CDriverManager::GetInterruptController(IDHelpInterruptController **ic)
 {
     (*ic) = &acpi::CApicController::GetInstance();
+    return kDHelpResultOk;
+}
+
+int CDriverManager::GetThreadManager(IDHelpThreadScheduler** th)
+{
+    auto mal = &CThreadManager::GetInstance();
+    if (mal == nullptr)
+    {
+        return kDHelpResultInvalidArgument;
+    }
+
+    (*th) = mal;
     return kDHelpResultOk;
 }
 

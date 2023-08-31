@@ -1,6 +1,7 @@
 #include <stddef.h>
 #include "limine.h"
 #include "requests.h"
+#include "terminal.h"
 
 static volatile struct limine_framebuffer_request 
 framebuffer = {

@@ -2,6 +2,7 @@
 #include "alloc/physical.h"
 
 #include "scheduler/scheduler.h"
+#include "scheduler/thread.h"
 #include "terminal.h"
 #include "limine.h"
 #include "arch/i386/cpu/gdt.h"
@@ -16,6 +17,7 @@
 
 static void hcf(void);
 static limine_memmap_entry* DetermineUsableEntry();
+static void LateInit(void*);
 
 extern "C"
 void KeStartThunk()
@@ -30,12 +32,14 @@ void KeStartThunk()
     limine_memmap_entry* ent = DetermineUsableEntry();
     pm::Create(reinterpret_cast<void*>(ent->base), ent->length);
     virtm::SetCr3((paddr_t)virtm::CreatePml4());
+
+    auto lateinit = new sched::CThread(LateInit, nullptr, sched::kThreadKernelMode);
+    auto& sch = sched::CScheduler::GetInstance();
+    sch.AddThread(lateinit);
     acpi::ParseTables();
-    driver::LoadDrivers();
-    
+    sch.Enable();
+
     Info("Finished execution!\n");
-    auto& c = sched::CScheduler::GetInstance();
-    c.Enable();
     hcf();
 }
 
@@ -55,14 +59,24 @@ static limine_memmap_entry* DetermineUsableEntry()
             ret = c;
         }
     }
-    
+
     return ret;
 }
 
-static void hcf(void) 
+static void hcf(void)
 {
-    for (;;) 
+    for (;;)
     {
         asm ("hlt");
     }
+}
+
+static void LateInit(void*)
+{
+    driver::LoadDrivers();
+
+    CTerminal::WriteFormatted("If you are reading this message, congratulations!\n"
+                              "Lock2 was sucessfully built! But it has nowhere to go.\n");
+    asm ("cli");
+    asm ("hlt");
 }

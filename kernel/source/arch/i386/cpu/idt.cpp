@@ -1,4 +1,5 @@
 #include "idt.h"
+#include "alloc/physical.h"
 #include "arch/i386/cpu/gdt.h"
 #include "arch/i386/apic.h"
 #include <stdint.h>
@@ -13,7 +14,18 @@ extern "C"
 void IdtGenericHandler(interrupt_frame* frame, int code, int error, register_state* state)
 {
     CIdt idt;
-    
+
+    if (code != 14)
+    {
+        Warn("Interrupt %i was triggered. Error=%i.", code, error);
+    }
+
+    if (code >= 35 && code != 50) /* 50 is reserved for IPIs */
+    {
+        acpi::CApicController::TriggerInterrupt(code);
+        goto eoi;
+    }
+
     if (code == 8 /* Double fault */
         || (code >= 10 && code <= 14) /* #TS-#PF */
         || code == 17                 /* #AC */
@@ -40,7 +52,7 @@ void IdtGenericHandler(interrupt_frame* frame, int code, int error, register_sta
 eoi:
     if (code >= 32)
     {
-        acpi::EndOfInterrupt();
+        acpi::local::EndOfInterrupt();
     }
     return;
 }

@@ -1,7 +1,47 @@
 #pragma once
 
+#include "alloc/physical.h"
 #include <type_traits>
 #include <stdint.h>
+
+#ifndef __system
+#define __system __attribute__((sysv_abi))
+#endif
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wc++20-extensions" /* Usage of asm keyword 
+                                                    inside constexpr is C++20 */
+
+namespace detail
+{
+
+/* Took from <https://stackoverflow.com/questions/64945691> */
+inline void ins(uint16_t port, uint8_t* dest, uint32_t count) 
+{
+    asm volatile("rep insb"
+        : "+D" (dest), "+c" (count), "=m" (*dest)
+        : "d" (port)
+        : "memory");
+}
+
+/* Clang does not support %z */
+inline void ins(uint16_t port, uint16_t* dest, uint32_t count) 
+{
+    asm volatile("rep insw"
+        : "+D" (dest), "+c" (count), "=m" (*dest)
+        : "d" (port)
+        : "memory");
+}
+
+inline void ins(uint16_t port, uint32_t* dest, uint32_t count) 
+{
+    asm volatile("rep insl"
+        : "+D" (dest), "+c" (count), "=m" (*dest)
+        : "d" (port)
+        : "memory");
+}
+
+}
 
 template<class ReadSize>
 class CPortRef
@@ -42,6 +82,11 @@ public:
         {
            asm volatile ("outl %0, %1" : : "a"(res), "Nd"(m_Port) : "memory");
         }
+    }
+
+    constexpr void ReadRepeated(ReadSize* buffer, size_t size) __system
+    {
+        detail::ins(m_Port, buffer, size);
     }
 
     constexpr void operator=(ReadSize value)
@@ -92,3 +137,5 @@ constexpr CPort<ReadSize> GetRegister(uint16_t port, uint16_t reg)
 {
     return port + reg;
 }
+
+#pragma GCC diagnostic pop

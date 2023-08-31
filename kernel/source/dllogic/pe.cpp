@@ -50,6 +50,7 @@ pe::CPortableExecutable::CPortableExecutable(pe::dos_header* header, int flags)
         for (uint64_t i = 0; i < s.VirtualSize; i += 4096)
         {
             virtm::MapPages(pml4, (paddr_t)mem + i, opt->ImageBase + s.VirtualAddress + i, pflags);
+            m_Pages.push_back({ (uint64_t)mem, opt->ImageBase + s.VirtualAddress + i, s.VirtualSize });            
         }
     }
 
