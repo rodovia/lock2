@@ -2,6 +2,8 @@
 #include "acpi/tables.h"
 #include "arch/i386/paging/paging.h"
 #include "arch/i386/apic.h"
+#include "alloc/physical.h"
+#include "terminal.h"
 
 #define GENCAP_REG 0
 #define GENCFG_REG 0x2
@@ -54,7 +56,7 @@ void acpi::AssociateHpetInterrupt()
 
     uint8_t finalInt;
     uint64_t cap = ptr[GENCAP_REG]; /* General Capabilities */
-    if ((cap & (1 << 15)) == 1) /* Legacy IRQ-capable */
+    if ((cap & (1 << 15))) /* Legacy IRQ-capable */
     {
         uint64_t tmrcfg = ptr[GENCFG_REG];
         tmrcfg |= 2; /* 0b10. Legacy IRQ enable and overall enable */
@@ -66,38 +68,37 @@ void acpi::AssociateHpetInterrupt()
     {
         uint64_t tmrcfg = ptr[TMRCFG_REG(0)];
         finalInt = FindSuitableIrq(tmrcfg >> 32);
-        tmrcfg |= (finalInt << 9) | (1 << 2); /* IRQ line and enable interrupts */
+        tmrcfg |= (finalInt << 9) | (1 << 2) | (1 << 3); /* IRQ line and enable interrupts */
         ptr[TMRCFG_REG(0)] = tmrcfg;
     }
 
     uint64_t gencfg = ptr[GENCFG_REG];
-    gencfg |= 1; /* Overall enable */
-    ptr[GENCFG_REG] = gencfg;
+    ptr[GENCFG_REG] = gencfg | 1;
 
     CApic apic;
     auto intr = apic.IoGetRedirectionEntry(finalInt);
     intr.Vector = 33;
+    intr.Mask = 0;
     intr.Destination = acpi::local::GetCurrentCpuId();
     apic.IoSetRedirectionEntry(finalInt, intr);
+    asm volatile("sti");
 }
 
 void acpi::PrepareHpetDelay(time::nanosec_t ns)
 {
+    _hpetSleepFlag = true;
     auto hd = reinterpret_cast<hpet_header*>(FindTable("HPET"));
     auto ptr = reinterpret_cast<uint64_t volatile*>(hd->BaseAddress.Address);
-    
+
     /* HALT the timer */
     uint64_t tmr = ptr[GENCFG_REG];
-    tmr &= ~1;
-
-    ptr[GENCFG_REG] = tmr;
+    ptr[GENCFG_REG] = tmr & ~1;
     ptr[TMRCMP_REG(0)] = ptr[GENMCV_REG] + ns;
 
     /* Reenable the timer */
-    tmr |= 1;
-    ptr[GENCFG_REG] = tmr;
+    ptr[GENCFG_REG] = tmr | 1;
+    ptr[TMRCFG_REG(0)] |= (1 << 2);
     
-    asm volatile("sti");
     while (_hpetSleepFlag)
     {
         asm volatile("hlt");

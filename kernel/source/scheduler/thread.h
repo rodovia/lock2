@@ -29,7 +29,7 @@ void AsyncTimer(time::millisec_t ticks,
                 async_timer_routine routine,
                 void* data);
 
-enum thread_suspend_reason
+enum thread_suspend_reason : unsigned int
 {
     kThreadSuspendReasonNotSuspended,
     kThreadSuspendReasonKilled,
@@ -48,16 +48,16 @@ public:
     CThread() = default;
     CThread(thread_start_routine routine,
             void* data,
-            thread_creation_flags flags
-        );
+            thread_creation_flags flags);
+    CThread(CThread&&) = delete;
+    CThread(const CThread&) = delete;
     ~CThread();
 
     void Start();
     full_register_state* GetState() const;
     void SaveState(full_register_state state);
     void SetSuspended(bool value, 
-                    thread_suspend_reason reason = kThreadSuspendReasonKilled
-                );
+                    thread_suspend_reason reason = kThreadSuspendReasonKilled);
 private:
     bool m_Suspended;
     thread_suspend_reason m_SuspendReason;

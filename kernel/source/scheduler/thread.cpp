@@ -1,6 +1,7 @@
 #include "thread.h"
 #include "alloc/physical.h"
 #include "arch/i386/cpu/idt.h"
+#include "arch/i386/thread_finish.h"
 #include "arch/i386/timer/time_units.h"
 #include "scheduler/scheduler.h"
 #include "terminal.h"
@@ -21,9 +22,10 @@ static void AsyncTimerThread(void* data)
 void sched::Sleep(time::millisec_t ticks)
 {
     auto t = CScheduler::GetCurrentThread();
-    auto sche = CScheduler::GetInstance();
+    auto& sche = CScheduler::GetInstance();
     t->SetSuspended(true, kThreadSuspendReasonWaiting);
     sche.AddSuspendedThread(t, ticks);
+    sche.YieldThreadTime();
 }
 
 void sched::AsyncTimer(time::millisec_t ticks, 
@@ -46,7 +48,7 @@ sched::CThread::CThread(sched::thread_start_routine routine,
       m_SuspendReason(kThreadSuspendReasonWaiting)
 {
     m_StackStart = pm::Alloc(4096);
-    m_RegState = (full_register_state*)pm::Alloc(sizeof(full_register_state));
+    m_RegState = new full_register_state;
     memset(m_RegState, 0, sizeof(full_register_state));
 
     m_RegState->Pointers.Cs = (flags & kThreadKernelMode) ? 3 * 8
@@ -56,6 +58,9 @@ sched::CThread::CThread(sched::thread_start_routine routine,
     m_RegState->Pointers.Rsp = (uword)m_StackStart + 4096;
     m_RegState->OtherRegisters.Rdi = (uword)data;
 
+    /* Write return address to stack */
+    *(uword*)(m_RegState->Pointers.Rsp) = (uword)_ThreadFinish;
+
     if (!(flags & kThreadCreateSuspended))
     {
         this->Start();
@@ -64,7 +69,7 @@ sched::CThread::CThread(sched::thread_start_routine routine,
 
 sched::CThread::~CThread()
 {
-    pm::Free(m_RegState);
+    delete m_RegState;
     pm::Free(m_StackStart);
 }
 

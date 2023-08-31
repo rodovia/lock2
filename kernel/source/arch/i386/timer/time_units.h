@@ -14,7 +14,15 @@ using second_t = uint64_t;
 }
 
 #pragma GCC diagnostic push
+
+/* Two warning names for the same thing: literal operator suffixes not preceded by ‘_’ 
+    are reserved for future standardization. */
+
+#ifdef __clang__
 #pragma GCC diagnostic ignored "-Wuser-defined-literals" 
+#else
+#pragma GCC diagnostic ignored "-Wliteral-suffix"
+#endif
 
 constexpr inline time::nanosec_t operator ""ms(unsigned long long ms)
 {

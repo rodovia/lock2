@@ -66,6 +66,8 @@ class CScheduler
 {
 public:
     CScheduler();
+    CScheduler(CScheduler&&) = delete;
+
     static CScheduler& GetInstance()
     {
         static CScheduler s;
@@ -76,6 +78,7 @@ public:
     static int GetCurrentThreadId();
     static void Think(full_register_state regState);
     static CThread*& GetThread(thread_t id);
+    void YieldThreadTime();
     void AddSuspendedThread(CThread* thread, time::millisec_t ticks);
     void RemoveSuspendedThread(thread_sleep_info* info);
     void AddThread(CThread* thread);
@@ -87,12 +90,12 @@ private:
     void ThinkDeep(full_register_state regState);
     void ThinkSuspendedThreads();
 
-    bool m_Enabled;
-    linked_list<thread_sleep_info>* m_SuspendedThreads;
-    thread_list* m_Threads;
-    uint32_t m_ThreadCount;
-    uint32_t m_Quantum;
-    uint32_t m_Index;
+    volatile bool m_Enabled;
+    std::vector<thread_sleep_info*> m_SuspendedThreads;
+    std::vector<CThread*> m_Threads;
+    volatile uint32_t m_ThreadCount;
+    volatile uint32_t m_Quantum;
+    volatile uint32_t m_Index;
 };
 
 }
