@@ -33,7 +33,6 @@ void Driver_Init(IDHelpDriverManager* mgr)
 
     auto i = ide::CreateController(devcs);
     AtapiReadCdRom(i, 180, 2, nullptr, 1024);
-    mgr->SetNotify(Driver_Notify);
     mgr->SetRole(kDHelpDriverRoleDisk);
 }
 
