@@ -3,6 +3,7 @@
 #include <stdint.h>
 
 #include <terminal.h>
+#include <type_traits>
 
 struct mem_global
 {
@@ -17,6 +18,17 @@ struct __attribute__((packed)) mem_block
 {
     mem_block* Next;
     uint32_t BlockSize;
+
+    constexpr mem_block(uint32_t blockSize,
+                        mem_block* next = nullptr)
+        : Next(next),
+          BlockSize(blockSize)
+    {}
+
+    constexpr mem_block()
+        : Next(nullptr),
+          BlockSize(0)
+    {}
 };
 
 struct __attribute__((packed)) mem_aligned_block
@@ -31,7 +43,8 @@ struct __attribute__((packed)) mem_aligned_block
         : Next(next),
           Alignment(alignment),
           BlockSize(blockSize)
-    {}
+    {
+    }
 
     constexpr mem_aligned_block()
         : Next(nullptr),
@@ -52,7 +65,6 @@ static void TraverseAppend(mem_block* head, mem_block* item)
     mem_block* tmp = head;
     while(tmp->Next != nullptr)
     {
-        Warn("tmp = %p, tmp->Next=%p", tmp, tmp->Next);
         tmp = tmp->Next;
     }
 
@@ -105,6 +117,20 @@ static void* BumpStrtg(size_t bytes)
     return dataHead;
 }
 
+/* Divide a memory block into two memory blocks.
+   The first being `block->BlockSize - nblocks` bytes,
+   and the second `nblocks` bytes. */
+static void SplitBlocks(mem_block* block, void* nblock, size_t nblocks)
+{
+    /* TODO: Add sanity checks (if block is nullptr, if nblock is inside block etc) */
+
+    block->BlockSize -= nblocks;
+    mem_block* nreinter = reinterpret_cast<mem_block*>(nblock);
+    mem_block blcpy(nblocks);
+    memcpy(nblock, &blcpy, sizeof(mem_block));
+    TraverseAppend(global->FreeList, nreinter);
+}
+
 /* "Allocates" (finds a free block of size >= *bytes*) a block.
     Similar to how Lockdown does it. */
 static void* LinklStratg(size_t bytes)
@@ -112,8 +138,17 @@ static void* LinklStratg(size_t bytes)
     mem_block* tmp = reinterpret_cast<mem_block*>(global->FreeList);
     while (tmp->Next != nullptr)
     {
-        if (tmp->BlockSize >= bytes)
+        if (tmp->BlockSize == bytes 
+            /* Cannot call SplitBlocks: cannot fit a block inside
+               the remainder space vvvv */
+        || tmp->BlockSize - bytes < sizeof(mem_block) + 1)
         {
+            break;
+        }
+
+        if (tmp->BlockSize > bytes)
+        {
+            SplitBlocks(tmp, PaAdd(tmp, bytes), tmp->BlockSize - bytes);
             break;
         }
 
@@ -121,6 +156,7 @@ static void* LinklStratg(size_t bytes)
     }
 
     TraverseAndRemove(&global->FreeList, tmp);
+    tmp->Next = nullptr;
     return PaAdd(tmp, sizeof(mem_block));
 }
 
@@ -160,6 +196,7 @@ void* pm::AlignedAlloc(size_t bytes, uint16_t alignment)
         return nullptr;
     }
 
+    /* Linked list */
     if (global->FreeAlignedList != nullptr)
     {
         mem_aligned_block* aligned = global->FreeAlignedList;
@@ -175,6 +212,7 @@ void* pm::AlignedAlloc(size_t bytes, uint16_t alignment)
         }
     }
 
+    /* Bump */
     mem_aligned_block al(bytes, alignment, nullptr);
     uint64_t head = reinterpret_cast<uint64_t>(global->Head);
 
@@ -204,6 +242,7 @@ void pm::Free(void* block)
 
     mem_block* tmp = global->FreeList;
     mem_block* blk = (mem_block*)(reinterpret_cast<uint8_t*>(block) - sizeof(mem_block));
+
     blk->Next = nullptr;
     global->AllocatedSize -= blk->BlockSize;
     if (tmp == nullptr)
@@ -256,7 +295,6 @@ void* pm::GetBegin()
 
 void* pm::GetEnd()
 {
-    Warn("global head = %p, size=%i, total size %i", global->Head, global->AllocatedSize, global->Length);
     return PaAdd(pm::GetBegin(), global->Length);
 }
 
