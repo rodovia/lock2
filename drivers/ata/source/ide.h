@@ -1,7 +1,6 @@
 #pragma once
 
 #include "arch/i386/debug/elf.h"
-#include "ata.h"
 #include "dllogic/api/dhelp.h"
 
 #define ATA_REG_DATA       0x00
@@ -55,7 +54,7 @@ namespace ide
 
 struct single_device
 {
-    uint8_t Reserved; /*< Also used to check if the drive exists (1) or not (0) */
+    uint8_t Reserved; /*< Used to check if the drive exists (1) or not (0) */
     uint8_t Channel; /*< Primary (0) or secondary (1) */
     uint8_t Drive; /*< Master (0) or slave (1) */
     uint8_t Type; /* ATA (0) or ATAPI (1) */
@@ -63,7 +62,7 @@ struct single_device
     uint16_t Capabilities;
     uint32_t CommandSets; 
     uint32_t Size; /*< Device size given in sectors*/
-    unsigned char Model[41];
+    char Model[41];
 };
 
 struct channel
@@ -88,6 +87,7 @@ struct ide_t
     direct_memory* PhysicalRegions;
     int CurrentDevice;
     int CurrentChannel;
+    IDHelpMutex* WriteMutex;
 
     void IdeWrite(int channel, int reg, unsigned char data);
     void IdeReadBuffer(int channel, int reg, 

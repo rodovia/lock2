@@ -2,7 +2,6 @@
 #include "alloc/physical.h"
 #include "ata.h"
 #include "dllogic/api/dhelp.h"
-#include <vector>
 
 #define ATA_PRIMARY_IO_PORT 0x1F0
 #define ATA_PRIMARY_CTL_PORT 0x3F0
@@ -11,6 +10,12 @@
 
 #define ATA_MASTER_CHANNEL 0
 #define ATA_SLAVE_CHANNEL 1
+
+#define Warn(M, ...) do {  \
+    IDHelpTerminal* __term; \
+    __DriverMgr->GetTerminal(&__term); \
+    __term->WriteFormat(M __VA_OPT__(,) __VA_ARGS__); } \
+    while(0)
 
 extern IDHelpDriverManager* __DriverMgr;
 
@@ -133,7 +138,8 @@ ide::ide_t* ide::CreateController(IDHelpPciDevice* device)
 
     auto idspace = (uint32_t*)alloc->Allocate(512);
     auto state = (ide_t*)alloc->Allocate(sizeof(ide_t));
-    __builtin_memset(state, 0, sizeof(ide_t));
+    memset(state, 0, sizeof(ide_t));
+    thr->CreateMutex(&state->WriteMutex);
 
     uint32_t bar[5];
     int ptr = 0;
@@ -190,7 +196,7 @@ ide::ide_t* ide::CreateController(IDHelpPciDevice* device)
                     break;
                 }
             }
-            
+
             if (status & ATA_SR_ERR)
             {
                 /* Likely an ATAPI device */
@@ -242,13 +248,15 @@ ide::ide_t* ide::CreateController(IDHelpPciDevice* device)
     state->PhysicalRegions->LastEntry = (1 << 15);
     state->PhysicalRegions->TransferSize = 1024;
 
+    memset(reinterpret_cast<void*>(state->PhysicalRegions->Address), 0, 1024);
+
     port32 bm = state->Channels[ATA_MASTER_CHANNEL].BusMaster + 0x4;
     (*bm) = (uint64_t)state->PhysicalRegions;
-    
+
     /* Re-enable interrupts */
     state->IdeWrite(ATA_MASTER_CHANNEL, ATA_REG_CONTROL, 0);
     state->IdeWrite(ATA_SLAVE_CHANNEL, ATA_REG_CONTROL, 0);
-    
+
     alloc->Free(idspace);
 
     return state;
@@ -283,8 +291,9 @@ void ide::SetupInterrupts(ide_t* state)
 
 void DriverAtaInterrupt(void* ct)
 {
-    IDHelpTerminal* term;
-    __DriverMgr->GetTerminal(&term);
-    
     auto state = reinterpret_cast<ide::ide_t*>(ct);
+    state->WriteMutex->Release();
+    ide::channel& channel = state->Channels[state->CurrentChannel];
+    port8 idecmd = channel.BusMaster;
+    (*idecmd) = 0;
 }

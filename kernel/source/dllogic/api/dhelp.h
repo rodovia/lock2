@@ -3,22 +3,13 @@
 #include <stdint.h>
 #include <stddef.h>
 
-/* By default, Clang (when building the drivers)
-    will think these methods are ms_abi. We don't want that. */
-#define __system __attribute__((sysv_abi))
-#define __pure = 0
-
-class IDHelpMachineLanguageObject;
-class IDHelpMachineLanguageRegistry;
-
-typedef uint64_t(*driver_notify)(uint32_t, uint64_t, uint64_t, uint64_t) __system;
-typedef void(*driver_interrupt_handler)(void* context) __system;
+#include "dhelp_driver.h"
 
 enum driver_role
 {
-    kDHelpDriverRoleDisk,
     kDHelpDriverRoleUninit, /*< Driver did not call SetRole or 
                             its init function was not called yet. */
+    kDHelpDriverRoleDisk,
 };
 
 enum driver_result
@@ -37,12 +28,24 @@ public:
     virtual void WriteFormat(const char* string, ...) __system __pure;
 };
 
+class IDHelpMutex
+{
+public:
+    virtual ~IDHelpMutex() __system {}
+
+    virtual void Lock() __system __pure;
+    /* It's literally the kernel's name can you believe it! */
+    virtual void Lock2(int timeout) __system __pure;
+    virtual void Release() __system __pure;
+};
+
 class IDHelpThreadScheduler
 {
 public:
     virtual ~IDHelpThreadScheduler() __system {}
 
     virtual void HaltExecution(int ms) __system __pure;
+    virtual void CreateMutex(IDHelpMutex** mutx) __system __pure;
     /* TODO: add CreateThread etc */
 };
 
@@ -85,7 +88,7 @@ public:
     virtual void FreeInterface(void* ref) __system __pure;
 
     virtual void SetRole(driver_role role) noexcept __system __pure;
-    virtual void SetNotify(driver_notify routine) noexcept __system __pure;
+    virtual void SetInterface(void* interf) noexcept __system __pure;
 };
 
 class IDHelpInterruptController

@@ -8,10 +8,33 @@
 #include "dllogic/load.h"
 #include "dllogic/pe.h"
 #include "pci/pci.h"
+#include "scheduler/semaphore.h"
 #include "terminal.h"
 
 namespace 
 {
+
+class CMutexWrapper : public IDHelpMutex
+{
+public:
+    virtual void Lock() override
+    {
+        m_Mutex.Lock();
+    }
+
+    virtual void Lock2(int timeout) override
+    {
+        m_Mutex.Lock(timeout);
+    }
+
+    virtual void Release() override
+    {
+        m_Mutex.Release();
+    }
+
+private:
+    sched::mutex m_Mutex;
+};
 
 class CThreadManager : public IDHelpThreadScheduler
 {
@@ -25,6 +48,11 @@ public:
     void HaltExecution(int ms) override
     {
         acpi::PrepareHpetDelay(ms * 1000);
+    }
+
+    void CreateMutex(IDHelpMutex** mutx) override
+    {
+        (*mutx) = new CMutexWrapper;
     }
 
 private:
@@ -177,5 +205,7 @@ driver::CreateManagerFor(pe::CPortableExecutable exec)
     return new CDriverManager(exec);
 }
 
-/* CMemoryAllocator */
-
+void* driver::GetInterfaceFor(IDHelpDriverManager *driver)
+{
+    return reinterpret_cast<CDriverManager*>(driver)->GetInterface();
+}

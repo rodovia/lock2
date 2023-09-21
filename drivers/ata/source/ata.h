@@ -3,6 +3,7 @@
 #include <type_traits>
 #include <stdint.h>
 #include "arch/i386/port.h"
+#include "ide.h"
 
 enum ata_io_register : unsigned short 
 {
@@ -35,3 +36,8 @@ enum ata_check_result
     kAtaChkAtaDrive
 };
 
+void AtapiReadCdRom(ide::ide_t* state,
+                    uint32_t lba,
+                    uint8_t* buffer,
+                    uint32_t sectors,
+                    uint32_t maxByteCount);

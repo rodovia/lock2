@@ -7,5 +7,6 @@ namespace driver
 {
 
 IDHelpDriverManager* CreateManagerFor(pe::CPortableExecutable exec);
+void* GetInterfaceFor(IDHelpDriverManager* driver);
 
 }
