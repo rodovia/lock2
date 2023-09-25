@@ -55,7 +55,7 @@ using interrupt_exception_routine = void(*)(interrupt_frame*, int, register_stat
 
 class CIdt
 {
-    static interrupt_gate_desc m_ServiceRots[48];
+    static interrupt_gate_desc m_ServiceRots[63];
     static void* m_Routines[48];    /* m_ServiceRots are wrappers to m_Routines */
 public:
     void InitDefaults();

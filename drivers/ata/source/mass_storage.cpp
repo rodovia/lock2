@@ -55,8 +55,7 @@ int CAtaMassStorageDevice::ReadSectors(uint64_t lba, uint32_t size,
     }
 
     /* ATAPI */ 
-    BochsDebugBreak;
-    AtapiReadCdRom(m_State, lba, buffer, 1, 8);
+    AtapiReadCdRom(m_State, lba, buffer, 1, size);
     auto rd = m_State->IdeRead(m_State->CurrentChannel, ATA_REG_STATUS);
     return 0;
 }

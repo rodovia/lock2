@@ -1,5 +1,9 @@
 extern IdtGenericHandler
 
+global _Spurious
+_Spurious:
+    iretq ; Handler for the APIC spurious interrupt
+
 %macro _Enter 0
     push rax
     push rbx
@@ -107,11 +111,22 @@ IdtGenericHandlerPrologue 33
 IdtGenericHandlerPrologue 34
 IdtGenericHandlerPrologue 35
 IdtGenericHandlerPrologue 36
+IdtGenericHandlerPrologue 37
+IdtGenericHandlerPrologue 38
+IdtGenericHandlerPrologue 39
+IdtGenericHandlerPrologue 40
+IdtGenericHandlerPrologue 41
+IdtGenericHandlerPrologue 42
+IdtGenericHandlerPrologue 43
+IdtGenericHandlerPrologue 44
+IdtGenericHandlerPrologue 45
+IdtGenericHandlerPrologue 46
+IdtGenericHandlerPrologue 47
 
 global idtTable
 idtTable:
 %assign i 0
-%rep 36
+%rep 48
     dq IdtGenericHandler%+i
 %assign i i + 1
 %endrep

@@ -34,6 +34,7 @@ enum thread_suspend_reason : unsigned int
     kThreadSuspendReasonNotSuspended,
     kThreadSuspendReasonKilled,
     kThreadSuspendReasonReturned, /* thread_start_routine returned. */
+    kThreadSuspendReasonSleeping, /* thread called Sleep. */
     kThreadSuspendReasonWaiting /* Thread created with kThreadCreateSuspended and
                                     is still waiting to startup or waiting for
                                     resource */
@@ -58,7 +59,9 @@ public:
     void SaveState(full_register_state state);
     void SetSuspended(bool value, 
                     thread_suspend_reason reason = kThreadSuspendReasonKilled);
+    int GetId() const;
 private:
+    int m_Id;
     bool m_Suspended;
     thread_suspend_reason m_SuspendReason;
     full_register_state* m_RegState;

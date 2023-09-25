@@ -1,4 +1,5 @@
 #include "semaphore.h"
+#include "alloc/physical.h"
 #include "arch/i386/timer/time_units.h"
 #include "scheduler/scheduler.h"
 #include "scheduler/thread.h"
@@ -48,14 +49,11 @@ void sched::semaphore::Wait()
     m_Counter--;
     if (m_Counter < 0)
     {
+        CScheduler& sch = CScheduler::GetInstance();
         CThread*& s = CScheduler::GetCurrentThread();
         s->SetSuspended(true, kThreadSuspendReasonWaiting);
         m_SuspendedThreads.push_back(CScheduler::GetCurrentThreadId());
-
-        while(true)
-        {
-            hlt();
-        }
+        sch.YieldThreadTime();
     }
 }
 
@@ -94,12 +92,12 @@ void sched::mutex::Release()
     if (!m_Flag)
     {
         m_Flag = true;
-        CThread* th;
-        
+        CScheduler& sch = CScheduler::GetInstance();
+
         for (const int& i : m_SuspendedThreads)
         {
-            th = CScheduler::GetThread(i);
-            th->SetSuspended(false, kThreadSuspendReasonNotSuspended);
+            Warn("m_SuspendedThreads = %i", i);
+            sch.RemoveSuspendedThread(i);
         }
     }
 }
@@ -112,14 +110,13 @@ void sched::mutex::Lock()
         return;
     }
 
+    auto& sch = CScheduler::GetInstance();
     auto& t = CScheduler::GetCurrentThread();
-    m_SuspendedThreads.push_back(CScheduler::GetCurrentThreadId());
-    t->SetSuspended(true, kThreadSuspendReasonWaiting);
+    m_SuspendedThreads.push_back(t->GetId());
 
-    while (true)
-    {
-        hlt();
-    }
+    t->SetSuspended(true, kThreadSuspendReasonWaiting);
+    sch.AddSuspendedThread(t, 0);
+    sch.YieldThreadTime();
 }
 
 int sched::mutex::Lock(time::millisec_t timeout)

@@ -102,9 +102,9 @@ static void Interrupt12(interrupt_frame* frame)
 
 static void Interrupt13(interrupt_frame* frame, int error, register_state* state)
 {
-    BochsDebugBreak;
-    _abortwrite("General protection fault; selector=%i\n", error);
     DumpFrame(frame);
+    // abort("General protection fault; selector=%i\n", error);
+    CTerminal::Write("General protection fault; selector=%i\n", error);
     HLT;
 }
 
@@ -118,10 +118,9 @@ static void Interrupt14(interrupt_frame* frame, int error, register_state* state
         virtm::MapPages(nullptr, cr2, cr2, PT_FLAG_WRITE);
         return;
     }
-    
-    _abortwrite("Page fault.\nAdditional info -> CR2=0x%p, 0x%p\n", cr2, error);
-    // dbg::DumpStackFrame((struct stackframe*)state->Rbp);
+
     DumpFrame(frame);
+    abort("Page fault.\nAdditional info -> CR2=0x%p, 0x%p\n", cr2, error);
     HLT;
 }
 
@@ -236,7 +235,6 @@ static void Interrupt32(interrupt_frame* frame, register_state* state)
 /* HPET timer */
 static void Interrupt33(interrupt_frame* frame, register_state* state)
 {
-    BochsDebugBreak;
     _hpetSleepFlag = false;
 }
 

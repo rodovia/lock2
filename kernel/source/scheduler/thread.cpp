@@ -23,7 +23,7 @@ void sched::Sleep(time::millisec_t ticks)
 {
     auto t = CScheduler::GetCurrentThread();
     auto& sche = CScheduler::GetInstance();
-    t->SetSuspended(true, kThreadSuspendReasonWaiting);
+    t->SetSuspended(true, kThreadSuspendReasonSleeping);
     sche.AddSuspendedThread(t, ticks);
     sche.YieldThreadTime();
 }
@@ -95,3 +95,7 @@ full_register_state* sched::CThread::GetState() const
     return m_RegState;
 }
 
+int sched::CThread::GetId() const
+{
+    return m_Id;
+}

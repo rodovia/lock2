@@ -10,14 +10,16 @@
 extern void* idtTable[];
 extern void* rotTable[];
 
+extern "C" void _Spurious();
+
 extern "C"
 void IdtGenericHandler(interrupt_frame* frame, int code, int error, register_state* state)
 {
     CIdt idt;
-
-    if (code != 14)
+    
+    if (code == 47) /* Spurious interrupt */
     {
-        Warn("Interrupt %i was triggered. Error=%i.", code, error);
+        return; 
     }
 
     if (code >= 35 && code != 50) /* 50 is reserved for IPIs */
@@ -84,7 +86,7 @@ void CIdt::AddRoutine(unsigned char vector, void* routine)
 void CIdt::InitDefaults()
 {
     uint64_t i;
-    for (i = 0; i < 36; i++)
+    for (i = 0; i < 48; i++)
     {
         this->AddEntry(i, idtTable[i]);
     }
@@ -93,6 +95,8 @@ void CIdt::InitDefaults()
     {
         this->AddRoutine(i, &rotTable[i]);
     }
+
+    this->AddEntry(47, reinterpret_cast<void*>(_Spurious));
 }
 
 void CIdt::Encode()
@@ -103,5 +107,5 @@ void CIdt::Encode()
     asm volatile("lidt %0" :: "m"(potr));
 }
 
-interrupt_gate_desc CIdt::m_ServiceRots[48];
+interrupt_gate_desc CIdt::m_ServiceRots[63];
 void* CIdt::m_Routines[48];

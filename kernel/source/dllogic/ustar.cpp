@@ -18,7 +18,6 @@ static int OctalToInteger(const char* str, int size)
 int driver::LoadUstarFile(unsigned char *archive, const char *file, char*& buffer)
 {
     const char* ptr = reinterpret_cast<char*>(archive);
-    Warn("ptr=0x%p\n", ptr);
     if (archive == nullptr)
     {
         return -1;

@@ -1,14 +1,10 @@
 global SegmsReload
 SegmsReload:
-    mov rax, rsp
-    push rsi
-    push rax
-    pushf
     push rdi
-    push _ReloadCs
-    iretq
-
-_ReloadCs:
+    lea rax, [rel ._ReloadCs]
+    push rax
+    retfq
+._ReloadCs:
     mov ds, si
     mov ss, si
     mov es, si

@@ -108,11 +108,6 @@ public:
         }
 
         main(this);
-        if (m_Role == kDHelpDriverRoleUninit)
-        {
-            Warn("Driver did not advertise its role, unloading!\n");
-            return;
-        }
     }
 
     ~CDriverManager() override {}
@@ -179,6 +174,11 @@ public:
     virtual void SetRole(driver_role role) noexcept override
     {
         m_Role = role;
+    }
+
+    virtual int GetRole() override
+    {
+        return m_Role;
     }
 
     virtual void SetInterface(void *interf) override

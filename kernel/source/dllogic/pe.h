@@ -2,6 +2,7 @@
 
 #include "alloc/physical.h"
 #include "arch/i386/paging/paging.h"
+#include "terminal.h"
 #include <stdint.h>
 #include <vector>
 #include <string>
@@ -17,12 +18,6 @@ struct allocated_page
     uint64_t PhysicalAddress;
     uint64_t VirtualAddress;
     size_t Size;
-
-    ~allocated_page()
-    {
-        virtm::UnmapPages(nullptr, VirtualAddress);
-        pm::AlignedFree(Size, (void*)PhysicalAddress);
-    }
 };
 
 struct dos_header

@@ -23,12 +23,6 @@ enum ata_ctl_register : unsigned short
     kAtaRegCtlDriverAddress,
 };
 
-enum ata_drive
-{
-    kAtaDriveMaster,
-    kAtaDriveSlave
-};
-
 enum ata_check_result
 {
     kAtaChkNoDrive,

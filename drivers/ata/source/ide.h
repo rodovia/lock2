@@ -1,6 +1,5 @@
 #pragma once
 
-#include "arch/i386/debug/elf.h"
 #include "dllogic/api/dhelp.h"
 
 #define ATA_REG_DATA       0x00
@@ -49,6 +48,12 @@
 #define ATA_SR_IDX     0x02
 #define ATA_SR_ERR     0x01
 
+#define ATA_PRIM_CHANNEL 0
+#define ATA_SECN_CHANNEL 1
+
+#define ATA_MAST_CHANNEL 0
+#define ATA_SLAV_CHANNEL 1
+
 namespace ide
 {
 
@@ -93,6 +98,7 @@ struct ide_t
     void IdeReadBuffer(int channel, int reg, 
                         uint32_t* buffer, uint32_t length);
     uint8_t IdeRead(int channel, int reg);
+    void SelectDevice(int channel, int slavemaster);
 };
 
 ide::ide_t* CreateController(IDHelpPciDevice* device);

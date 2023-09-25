@@ -31,27 +31,27 @@ pe::CPortableExecutable::CPortableExecutable(pe::dos_header* header, int flags)
         return;
     }
 
-    int pflags = (flags & kPeLoadFlagsCurrentAddressSpace) ? 0 : PT_FLAG_USER;
-    uint64_t* pml4 = (flags & kPeLoadFlagsPageInsideKernelMode) ? nullptr : virtm::CreatePml4();
+    int pflags = (flags & kPeLoadFlagsPageInsideKernelMode) ? 0 : PT_FLAG_USER;
+    uint64_t* pml4 = (flags & kPeLoadFlagsCurrentAddressSpace) ? nullptr : virtm::CreatePml4();
+    // allocated_page c;
     for (uint16_t i = 0; i < pe->NumberOfSections; i++)
     {
-        pe_section s = secs[i];
+        pe_section& s = secs[i];
         if (s.Characteristics & kPeSectionWrite)
         {
             pflags |= PT_FLAG_WRITE;
         }
 
-        char* mem = reinterpret_cast<char*>(
-            pm::AlignedAlloc(s.VirtualSize, opt->SectionAlignment)
-        );
-        ZeroMemory(mem, s.SizeOfRawData);
+        char* mem = reinterpret_cast<char*>(pm::AlignedAlloc(s.VirtualSize, opt->SectionAlignment));
+        ZeroMemory(mem, s.VirtualSize);
         memcpy(mem, raw + s.PointerToRawData, s.SizeOfRawData);
         
         for (uint64_t i = 0; i < s.VirtualSize; i += 4096)
         {
             virtm::MapPages(pml4, (paddr_t)mem + i, opt->ImageBase + s.VirtualAddress + i, pflags);
-            m_Pages.push_back({ (uint64_t)mem, opt->ImageBase + s.VirtualAddress + i, s.VirtualSize });            
         }
+
+        // m_Pages.push_back(c);
     }
 
     m_Header = pe;
@@ -62,7 +62,6 @@ void* pe::CPortableExecutable::GetSymbolAddress(std::string_view name)
 {
     if (name.empty() || !(m_Header->Characteristics & kPeCharsDll))
     {
-        Warn("Name empty or not a DLL");
         return nullptr;
     }
 

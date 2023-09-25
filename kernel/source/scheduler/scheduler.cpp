@@ -27,18 +27,23 @@ sched::CScheduler::CScheduler()
     this->AddThread(thr);
 }
 
+sched::CThread* sched::CScheduler::GetSuspendedThread(thread_t id)
+{
+    auto& thiz = GetInstance();
+    auto iter = std::find_if(thiz.m_SuspendedThreads.begin(), thiz.m_SuspendedThreads.end(),
+                        [&](thread_sleep_info* inf)
+                        {
+                            return inf->Thread->GetId() == id;
+                        });
+
+    return (iter == thiz.m_SuspendedThreads.end()) ? nullptr : iter->Thread;
+}
+
 void sched::CScheduler::Think(full_register_state regState)
 {
     EnterCriticalZone();
     CScheduler* thiz = &CScheduler::GetInstance();
     thiz->ThinkDeep(regState);
-    LeaveCriticalZone();
-}
-
-void sched::CScheduler::Enable()
-{
-    EnterCriticalZone();
-    m_Enabled = true;
     LeaveCriticalZone();
 }
 
@@ -60,20 +65,15 @@ void sched::CScheduler::ThinkDeep(full_register_state regState)
         return;
     }
 
-    auto& current = m_Threads[m_Index];
+    auto current = m_Threads[m_Index];
     current->SaveState(regState);
     m_Index++;
-    if (m_Index >= m_ThreadCount)
+    if (m_Index >= m_Threads.size())
     {
         m_Index = 0;
     }
-    
-    current = m_Threads.at(m_Index);
-    if (current == nullptr)
-    {
-        return;
-    }
 
+    current = m_Threads.at(m_Index);
     m_Quantum = 10;
     acpi::local::EndOfInterrupt();
     SchSwitchTaskKernel(current->m_RegState);
@@ -82,8 +82,8 @@ void sched::CScheduler::ThinkDeep(full_register_state regState)
 void sched::CScheduler::AddThread(CThread* thread)
 {
     EnterCriticalZone();
+    thread->m_Id = ++m_ThreadCount;
     m_Threads.push_back(thread);
-    m_ThreadCount++;
     LeaveCriticalZone();
 }
 
@@ -115,28 +115,53 @@ sched::CThread*& sched::CScheduler::GetThread(thread_t id)
     return thiz.m_Threads[id];
 }
 
-void sched::CScheduler::AddSuspendedThread(CThread *thread, time::millisec_t ticks)
+void sched::CScheduler::AddSuspendedThread(CThread* thread, time::millisec_t ticks)
 {
     EnterCriticalZone();
+    this->RemoveThread(thread);
     auto t = new thread_sleep_info{thread, ticks};
     m_SuspendedThreads.push_back(t);
     LeaveCriticalZone();
 }
 
-void sched::CScheduler::RemoveSuspendedThread(thread_sleep_info* i)
+void sched::CScheduler::RemoveSuspendedThread(thread_t thread)
 {
-    std::erase(m_SuspendedThreads, i);
+    auto iter = std::find_if(m_SuspendedThreads.begin(), m_SuspendedThreads.end(), 
+                    [&](thread_sleep_info* info)
+                    {
+                        return info->Thread->m_Id == thread;
+                    });
+    Warn("iter == m_SuspendedThreads.end() = %i, thread = %i", iter == m_SuspendedThreads.end(), thread);
+    if (iter == m_SuspendedThreads.end())
+    {
+        return;
+    }
+
+    auto copy = iter->Thread;
+    std::erase(m_SuspendedThreads, *iter);
+    m_Threads.push_back(copy);
 }
 
 void sched::CScheduler::ThinkSuspendedThreads()
 {
+    if (m_SuspendedThreads.empty())
+    {
+        return;
+    }
+
     for (auto& i : m_SuspendedThreads)
     {
+        if (i->Thread->m_SuspendReason != kThreadSuspendReasonSleeping)
+        {
+            continue;
+        }
+
         i->RemainingTicks -= 1;
 
         if (i->RemainingTicks <= 0)
         {
-            this->RemoveSuspendedThread(i);
+            Warn("sleeping thread %i", i->Thread->GetId());
+            this->RemoveSuspendedThread(i->Thread->m_Id);
         }
     }
 
@@ -145,4 +170,9 @@ void sched::CScheduler::ThinkSuspendedThreads()
 void sched::CScheduler::YieldThreadTime()
 {
     m_Quantum = 0;
+}
+
+void sched::CScheduler::SetEnabled(bool enabled)
+{
+    m_Enabled = enabled;
 }

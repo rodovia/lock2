@@ -262,6 +262,21 @@ ide::ide_t* ide::CreateController(IDHelpPciDevice* device)
     return state;
 }
 
+void ide::ide_t::SelectDevice(int channel, int slavemaster)
+{
+    auto& ch = Channels[channel];
+
+    port8 sel = ch.IoBase + 6;
+    (*sel) = (slavemaster << 4);
+    port8 alts = ch.CtlBase;
+
+    /* INB 15 times to wait the drive to select the bus */
+    for (int i = 0; i < 15; i++)
+    {
+        ((void)(*alts).Read());
+    }
+}
+
 void ide::SetupInterrupts(ide_t* state)
 {
     IDHelpPci* pci;
@@ -293,7 +308,4 @@ void DriverAtaInterrupt(void* ct)
 {
     auto state = reinterpret_cast<ide::ide_t*>(ct);
     state->WriteMutex->Release();
-    ide::channel& channel = state->Channels[state->CurrentChannel];
-    port8 idecmd = channel.BusMaster;
-    (*idecmd) = 0;
 }

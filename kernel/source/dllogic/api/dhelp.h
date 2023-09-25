@@ -39,6 +39,12 @@ public:
     virtual void Release() __system __pure;
 };
 
+class IDHelpSemaphore
+{
+public:
+
+};
+
 class IDHelpThreadScheduler
 {
 public:
@@ -46,6 +52,7 @@ public:
 
     virtual void HaltExecution(int ms) __system __pure;
     virtual void CreateMutex(IDHelpMutex** mutx) __system __pure;
+    // virtual void CreateSemaphore(int limit, IDHelpSemaphore** sem) __system __pure;
     /* TODO: add CreateThread etc */
 };
 
@@ -88,6 +95,7 @@ public:
     virtual void FreeInterface(void* ref) __system __pure;
 
     virtual void SetRole(driver_role role) noexcept __system __pure;
+    virtual int GetRole() noexcept __system __pure;
     virtual void SetInterface(void* interf) noexcept __system __pure;
 };
 

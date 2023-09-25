@@ -25,7 +25,8 @@ void acpi::CApicTimer::Configure(apic_timer_mode mode)
     tm &= ~(1 << 16);
 
     acpi::local::WriteLocal(kLocalVectorTable_Timer, tm);
-    acpi::local::WriteLocal(kLocalVectorTable_Error, 33);
+    acpi::local::WriteLocal(kLocalVectorTable_Error, 34);
+    acpi::local::WriteLocal(0xF0, 47 | (1 << 8));
 }
 
 void acpi::CApicTimer::SetInitialCount(uint32_t count)

@@ -5,11 +5,11 @@
 extern "C"
 void _ThreadFinish()
 {
-    BochsDebugBreak;
     auto thread = sched::CScheduler::GetCurrentThread();
     auto& sch = sched::CScheduler::GetInstance();
     sch.RemoveThread(thread);
     sch.YieldThreadTime();
+
     while (true)
     {
         asm ("hlt");

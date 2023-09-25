@@ -3,7 +3,7 @@
 #include "ata.h"
 #include "dllogic/api/dhelp.h"
 #include "ide.h"
-#include <vector>
+#include <vector> 
 
 #define Warn(M, ...) do {  \
     IDHelpTerminal* __term; \
@@ -24,33 +24,41 @@ void Driver_Init(IDHelpDriverManager* mgr)
     mgr->GetTerminal(&term);
     mgr->GetPci(&pci);
     pci->FindDeviceByClass(0x1, 0x1, &devcs);
+    if (devcs == nullptr)
+    {
+        return;
+    }
 
     auto i = ide::CreateController(devcs);
     mgr->SetRole(kDHelpDriverRoleDisk);
     mgr->SetInterface(new CAtaMassStorage(i));
 }
 
-static void CheckForErrors(ide::ide_t* state)
+
+int AtaWaitStatus(ide::channel& channel, int st, int timeout = 10)
 {
-    ide::channel& channel = state->Channels[state->CurrentChannel];
-    port16 data = channel.IoBase + kAtaRegIoData;
-    port8 cmd = channel.IoBase + kAtaRegIoStatusCommand;
-    Warn("status = 0x%p", (*cmd).Read());
+    uint8_t status;
+    IDHelpThreadScheduler* sched;
+    __DriverMgr->GetThreadManager(&sched);
+    port8 ns = channel.CtlBase;
 
-    static volatile uint8_t sensecmd[6] = {
-        0x03, 0, /* REQUEST SENSE, Fixed format */
-        0, 0,
-        252, 0
-    };
-
-    (*cmd) = 0xA0;
-    for (uint16_t o = 0; o < 6; o++)
+    while (timeout)
     {
-        (*data) = sensecmd[o];
+        status = *ns;
+        if (!(status & ATA_SR_BSY))
+        {
+            if ((status & (ATA_SR_DF | ATA_SR_ERR)))
+            {
+                return 1;
+            }
+            return status & st;
+        }
+
+        sched->HaltExecution(1);
+        timeout--;
     }
 
-    state->WriteMutex->Lock();
-    BochsDebugBreak;
+    return -1;
 }
 
 /* Some code was taken from osdev wiki. */
@@ -60,28 +68,25 @@ void AtapiReadCdRom(ide::ide_t* state,
                     uint32_t sectors,
                     uint32_t maxByteCount)
 {
+    state->WriteMutex->Lock();
     ide::channel& channel = state->Channels[state->CurrentChannel];
 
-    state->WriteMutex->Lock();
-    port16 dma = channel.BusMaster;
     port8 lbalw = channel.IoBase + kAtaRegIoSectorCylinderLow;
     port8 lbahg = channel.IoBase + kAtaRegIoSectorCylinderHigh;
     port8 cmd = channel.IoBase + kAtaRegIoStatusCommand;
     port16 data = channel.IoBase + kAtaRegIoData;
-    port8 driveselect = channel.IoBase + kAtaRegIoDriveSelectHead;
     port8 feat = channel.IoBase + 1;
     port8 idecmd = channel.BusMaster;
-    port8 idestatus = channel.BusMaster + 2;
 
     (*idecmd) = 0;
-    (*driveselect) = (state->CurrentDevice << 4); /* Set current device and enable LBA */
-    (*feat) = 1;
+    state->SelectDevice(state->CurrentChannel, state->CurrentDevice);
 
-    // (*idecmd) = 0;             /* Disable DMA */
-    (*idecmd) = (1 << 3) | 1; /* Set operation to read and reenable DMA */
-    *lbalw = (uint16_t)maxByteCount & 0xFF;
-    *lbahg = (uint16_t)maxByteCount >> 8;
+    (*feat) = 0;
+    *lbalw = maxByteCount & 0xFF;
+    *lbahg = maxByteCount >> 8;
+    
     *cmd = 0xA0; /* ATAPI PACKET */
+    AtaWaitStatus(channel, ATA_SR_DRQ);
 
     volatile uint8_t command[12] = {0xA8, 0,
 	                    static_cast<uint8_t>((lba >> 0x18) & 0xFF), 
@@ -100,7 +105,11 @@ void AtapiReadCdRom(ide::ide_t* state,
         (*data) = command16[i];
     }
 
-    state->WriteMutex->Lock(); /* Lock again so the function will halt 
-                                (and only unlock when the interrupt is triggered) */
-    CheckForErrors(state);
+    state->WriteMutex->Lock();
+
+    uint8_t high = *lbahg;
+    uint8_t low = *lbalw;
+    BochsDebugBreak;
+    (*data).ReadRepeated(reinterpret_cast<uint16_t*>(buffer), 
+                                ((high << 8) | low) / 2);
 }
