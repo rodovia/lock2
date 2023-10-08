@@ -57,6 +57,8 @@ static void Interrupt5(interrupt_frame* frame)
 
 static void Interrupt6(interrupt_frame* frame, register_state* state)
 {
+    DumpFrame(frame);
+    BochsDebugBreak;
     _abortwrite("Invalid instruction\n");
     dbg::DumpStackFrame((struct stackframe*)state->Rbp);
     HLT;
@@ -228,7 +230,7 @@ static void Interrupt31(interrupt_frame* frame)
 
 static void Interrupt32(interrupt_frame* frame, register_state* state)
 {
-    full_register_state st = { *frame, *state };
+    sched::full_register_state st = { *frame, *state };
     sched::CScheduler::Think(st);
 }
 

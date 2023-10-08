@@ -38,6 +38,31 @@ gdt_tss_entry_encoded : public gdt_entry_encoded
     uint32_t Reserved;
 };
 
+struct __attribute__((packed))
+gdt_tss_entry
+{
+    uint64_t Base;
+    uint16_t Limit;
+    uint8_t Flags;
+    uint8_t AccessByte;
+
+    constexpr gdt_tss_entry_encoded Encode() const
+    {
+        return gdt_tss_entry_encoded {
+            gdt_entry_encoded {
+                Limit,
+                static_cast<uint16_t>(Base & 0xFFFF),
+                static_cast<uint8_t>((Base >> 16) & 0xFF),
+                AccessByte,
+                Flags,
+                static_cast<uint8_t>((Base >> 24) & 0xFF)
+            },
+            static_cast<uint32_t>((Base >> 32) & 0xFFFFFFFF),
+            0
+        };
+    }
+};
+
 struct gdt_entries
 {
     gdt_entry_encoded Null;

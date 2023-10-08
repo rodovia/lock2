@@ -4,6 +4,7 @@
 #include "scheduler/scheduler.h"
 #include "scheduler/thread.h"
 #include <cstddef>
+#include "terminal.h"
 
 [[gnu::always_inline]]
 void hlt()
@@ -96,9 +97,10 @@ void sched::mutex::Release()
 
         for (const int& i : m_SuspendedThreads)
         {
-            Warn("m_SuspendedThreads = %i", i);
             sch.RemoveSuspendedThread(i);
+            std::erase(m_SuspendedThreads, i);
         }
+
     }
 }
 
@@ -109,7 +111,7 @@ void sched::mutex::Lock()
         m_Flag = false;
         return;
     }
-
+    
     auto& sch = CScheduler::GetInstance();
     auto& t = CScheduler::GetCurrentThread();
     m_SuspendedThreads.push_back(t->GetId());

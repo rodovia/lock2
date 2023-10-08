@@ -4,6 +4,8 @@
 #include "scheduler/thread.h"
 #include <vector>
 
+using thread_t = uint32_t;
+
 namespace sched
 {
 

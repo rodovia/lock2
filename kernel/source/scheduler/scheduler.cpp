@@ -1,15 +1,14 @@
 #include "scheduler.h"
 #include "alloc/physical.h"
-#include "arch/i386/cpu/idt.h"
 #include "scheduler/thread.h"
 #include "arch/i386/apic.h"
 #include "terminal.h"
 #include <algorithm>
 
-#define EnterCriticalZone() asm volatile("cli")
+#define EnterCriticalZone()
 #define LeaveCriticalZone() asm volatile("sti")
 
-extern "C" void SchSwitchTaskKernel(full_register_state* state);
+extern "C" void SchSwitchTaskKernel(sched::full_register_state* state);
 
 sched::CScheduler::CScheduler()
     : m_Enabled(false),
@@ -131,7 +130,6 @@ void sched::CScheduler::RemoveSuspendedThread(thread_t thread)
                     {
                         return info->Thread->m_Id == thread;
                     });
-    Warn("iter == m_SuspendedThreads.end() = %i, thread = %i", iter == m_SuspendedThreads.end(), thread);
     if (iter == m_SuspendedThreads.end())
     {
         return;
@@ -160,7 +158,6 @@ void sched::CScheduler::ThinkSuspendedThreads()
 
         if (i->RemainingTicks <= 0)
         {
-            Warn("sleeping thread %i", i->Thread->GetId());
             this->RemoveSuspendedThread(i->Thread->m_Id);
         }
     }

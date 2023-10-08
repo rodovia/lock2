@@ -10,4 +10,6 @@ SegmsReload:
     mov es, si
     mov gs, si
     mov fs, si
+    mov ax, 0x38
+    ltr ax
     ret

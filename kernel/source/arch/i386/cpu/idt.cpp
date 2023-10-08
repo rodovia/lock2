@@ -1,9 +1,9 @@
 #include "idt.h"
-#include "alloc/physical.h"
 #include "arch/i386/cpu/gdt.h"
 #include "arch/i386/apic.h"
-#include <stdint.h>
 #include "terminal.h"
+
+#include <stdint.h>
 
 #define UNUSED(E) ((void)E)
 
@@ -62,7 +62,7 @@ eoi:
 void CIdt::AddEntry(unsigned char num, void* routine)
 {
     interrupt_gate_desc dc;
-    dc.IstOffset = 0;
+    dc.IstOffset = (num == 32) ? 2 : 1;
     dc.OffsetLw16 = ((uint64_t)routine & 0xFFFF);
     dc.OffsetMd16 = ((uint64_t)routine >> 16) & 0xFFFF;
     dc.OffsetHi32 = ((uint64_t)routine >> 32);
@@ -96,7 +96,7 @@ void CIdt::InitDefaults()
         this->AddRoutine(i, &rotTable[i]);
     }
 
-    this->AddEntry(47, reinterpret_cast<void*>(_Spurious));
+    this->AddEntry(46, reinterpret_cast<void*>(_Spurious));
 }
 
 void CIdt::Encode()

@@ -59,7 +59,7 @@ sched::CThread::CThread(sched::thread_start_routine routine,
     m_RegState->OtherRegisters.Rdi = (uword)data;
 
     /* Write return address to stack */
-    *(uword*)(m_RegState->Pointers.Rsp) = (uword)_ThreadFinish;
+    *((uword*)m_RegState->Pointers.Rsp) = (uword)_ThreadFinish;
 
     if (!(flags & kThreadCreateSuspended))
     {
@@ -90,7 +90,7 @@ void sched::CThread::SaveState(full_register_state state)
     *m_RegState = state;
 }
 
-full_register_state* sched::CThread::GetState() const
+sched::full_register_state* sched::CThread::GetState() const
 {
     return m_RegState;
 }

@@ -6,7 +6,11 @@
 namespace sched
 {
 
-using ::full_register_state;
+struct full_register_state
+{
+    interrupt_frame Pointers;
+    register_state OtherRegisters;
+};
 
 using thread_start_routine = void(*)(void*);
 using async_timer_routine = void(*)(void*);

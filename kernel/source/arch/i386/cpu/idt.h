@@ -1,7 +1,6 @@
 #pragma once
 
 #include <stdint.h>
-#include "terminal.h"
 
 using uword = unsigned long;
 
@@ -30,13 +29,8 @@ register_state
     uword Rcx;
     uword Rbx;
     uword Rax;
+    uword R8;
     uword Rbp;
-};
-
-struct full_register_state
-{
-    interrupt_frame Pointers;
-    register_state OtherRegisters;
 };
 
 struct interrupt_gate_desc

@@ -9,6 +9,7 @@ extern "C" void SegmsReload(uint64_t cs, uint64_t ds);
 static struct tss tss;
 static char _ring0Stack[4096];
 static char _interruptStack[2048];
+static char _interrupt32Stack[2048];
 
 gdt_entry_encoded gdt_entry::Encode() const
 {
@@ -30,10 +31,12 @@ void CGdt::InitDefaults()
     entries.KernelData64Bit = gdt_entry{ 0xffff, 0, 0x92, 0xa0 }.Encode();
     entries.UserCode64Bit = gdt_entry { 0xffff, 0, 0xFA, 0x20 }.Encode();
     entries.UserData64Bit = gdt_entry{ 0xffff, 0, 0xF2, 0xa2 }.Encode();
+    entries.Tss = gdt_tss_entry{reinterpret_cast<uint64_t>(&tss), sizeof(tss), 0, 0x89}.Encode();
 
     memset(&tss, 0, sizeof(tss));
     tss.Rsp[0] = (uint64_t)_ring0Stack;
     tss.Ist[0] = (uint64_t)_interruptStack;
+    tss.Ist[1] = (uint64_t)_interrupt32Stack;
 }
 
 void CGdt::AddEntry(int index, gdt_entry ent)

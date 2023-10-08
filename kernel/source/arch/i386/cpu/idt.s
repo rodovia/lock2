@@ -5,6 +5,7 @@ _Spurious:
     iretq ; Handler for the APIC spurious interrupt
 
 %macro _Enter 0
+    push r8
     push rax
     push rbx
     push rcx
@@ -34,6 +35,7 @@ _Spurious:
     pop rcx
     pop rbx
     pop rax
+    pop r8
 %endmacro
 
 %macro IdtGenericHandlerPrologue 1

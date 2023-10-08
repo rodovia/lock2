@@ -23,7 +23,7 @@ struct semaphore
     bool IsFree() const;
 private:
     volatile int m_Counter;
-    std::vector<thread_t> m_SuspendedThreads;
+    std::vector<int> m_SuspendedThreads;
 };
 
 struct mutex
@@ -34,7 +34,7 @@ struct mutex
     void Release();
 private:
     bool m_Flag;
-    std::vector<thread_t> m_SuspendedThreads;
+    std::vector<int> m_SuspendedThreads;
 };
 
 }
